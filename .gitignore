@@ -16,9 +16,18 @@
 *.json
 !src/mflux/models/common/training/_example/train.json
 !tests/training/config/train.json
+!api/data/config.json
 tests/training/tmp/
 
 *.egg-info
+__pycache__/
+api/data/*.bak
+outputs/
+ui/dist/
+ui/node_modules/
+ui/*.tsbuildinfo
+ui/*.js
+ui/*.d.ts
 
 # build/ generated from 'pip install -e .' in developer mode
 build/

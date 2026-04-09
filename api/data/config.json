@@ -1,0 +1,26 @@
+{
+  "paths": {
+    "hfHome": "~/.cache/huggingface",
+    "modelDir": "./.mflux-cache",
+    "outputDir": "./outputs",
+    "loraDir": "./.mflux-cache/loras"
+  },
+  "generation": {
+    "defaultModel": "z-image-turbo",
+    "defaultQuantize": 8,
+    "defaultSteps": 9,
+    "outputFormat": "png",
+    "quality": 95,
+    "autoSeeds": true
+  },
+  "system": {
+    "cacheLimit": 8,
+    "lowRamMode": false,
+    "livePreview": true
+  },
+  "backend": {
+    "serverUrl": "127.0.0.1",
+    "port": 8188,
+    "autoOpenBrowser": true
+  }
+}

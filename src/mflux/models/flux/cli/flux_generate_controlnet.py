@@ -65,7 +65,7 @@ def main():
 
 
 def _get_controlnet_model_config(model_name: str) -> ModelConfig:
-    if model_name == "schnell":
+    if model_name in {"schnell", "schnell-controlnet-canny"}:
         return ModelConfig.schnell_controlnet_canny()
     return ModelConfig.dev_controlnet_canny()
 
