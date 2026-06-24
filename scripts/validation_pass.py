@@ -190,22 +190,30 @@ def validate_gallery_img2img_handoff(client: TestClient) -> str | None:
         return None
     record("Gallery → Img2Img source image exists", "PASS", image_path)
 
-    job = submit_job(
-        client,
-        "img2img",
-        {
-            "prompt": "validation pass subtle color shift",
-            "model": "z-image-turbo",
-            "imagePath": image_path,
-            "width": 256,
-            "height": 256,
-            "steps": 1,
-            "quantize": 8,
-            "seed": 4242,
-            "guidance": 3.5,
-            "imageStrength": 0.6,
-        },
-    )
+    preferred_model = str(candidate.get("model") or "z-image-turbo")
+    builtins = _builtin_models(client)
+    cached_img2img = _cached_allowlisted_models(builtins, "img2img")
+    model_id = preferred_model if preferred_model in cached_img2img else (cached_img2img[0] if cached_img2img else None)
+    if not model_id:
+        record("Gallery → Img2Img job accepted", "SKIP", "no cached img2img model")
+        return image_path
+
+    img2img_params = {
+        "prompt": "validation pass subtle color shift",
+        "model": model_id,
+        "imagePath": image_path,
+        "width": 256,
+        "height": 256,
+        "steps": _minimal_steps_for_model(model_id),
+        "quantize": 8,
+        "seed": 4242,
+        "imageStrength": 0.6,
+    }
+    guidance = _guidance_for_model(model_id)
+    if guidance is not None:
+        img2img_params["guidance"] = max(guidance, 0.1) if model_id != "z-image-turbo" else guidance
+
+    job = submit_job(client, "img2img", img2img_params)
     if not job:
         record("Gallery → Img2Img job accepted", "FAIL", "submission rejected")
         return None

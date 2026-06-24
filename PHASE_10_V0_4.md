@@ -39,7 +39,7 @@
 
 - [x] `NEURAL_INTERFACE_RUNBOOK.md` — start, validate, tag, env vars
 - [x] `neural-interface-v0.3` git tag
-- [ ] `git push` (run manually if remote auth required)
+- [ ] `git push` (run manually: `git push origin codex/workspace-cleanup-snapshot --tags`)
 
 ---
 
