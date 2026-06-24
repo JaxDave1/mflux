@@ -41,8 +41,8 @@ def health() -> ApiEnvelope[HealthResponse]:
 
 @router.get("/system/status")
 def system_status() -> ApiEnvelope[SystemStatus]:
-    status = get_system_status(store.load())
-    status.activeJobs = job_manager.active_count()
+    active_jobs = job_manager.active_count()
+    status = get_system_status(store.load(), active_jobs=active_jobs)
     return ApiEnvelope(ok=True, data=status)
 
 

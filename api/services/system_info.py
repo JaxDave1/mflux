@@ -1,6 +1,7 @@
 import os
 import platform
 import subprocess
+import sys
 from pathlib import Path
 
 from api.schemas.requests import AppConfig
@@ -78,6 +79,55 @@ def _nearest_existing_path(path: Path) -> Path:
     return current
 
 
+def _directory_size(path: Path) -> int:
+    if not path.exists():
+        return 0
+    total = 0
+    for candidate in path.rglob("*"):
+        if candidate.is_symlink():
+            continue
+        if candidate.is_file():
+            try:
+                total += candidate.stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def _default_mflux_cache_dir() -> Path:
+    if os.environ.get("MFLUX_CACHE_DIR"):
+        return Path(os.environ["MFLUX_CACHE_DIR"]).expanduser()
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "mflux"
+    return Path.home() / ".cache" / "mflux"
+
+
+def _hf_hub_cache(config_hf_home: str) -> Path:
+    if os.environ.get("HUGGINGFACE_HUB_CACHE"):
+        return Path(os.environ["HUGGINGFACE_HUB_CACHE"]).expanduser()
+    if os.environ.get("HF_HOME"):
+        return Path(os.environ["HF_HOME"]).expanduser() / "hub"
+    resolved = Path(config_hf_home).expanduser()
+    if resolved.name == "hub":
+        return resolved
+    return resolved / "hub"
+
+
+def _mlx_cache_stats(config: AppConfig) -> MemoryStat:
+    hf_root = _hf_hub_cache(config.paths.hfHome)
+    mflux_root = _default_mflux_cache_dir()
+    used_bytes = _directory_size(hf_root) + _directory_size(mflux_root)
+    used_gb = round(used_bytes / 1024**3, 1)
+    total_gb = float(config.system.cacheLimit)
+    return MemoryStat(used=used_gb, total=total_gb, unit="GB")
+
+
+def _loaded_model(config: AppConfig) -> LoadedModel:
+    quantize = config.generation.defaultQuantize
+    quantize_label = "off" if not quantize else f"q{quantize}"
+    return LoadedModel(name=config.generation.defaultModel, quantize=quantize_label)
+
+
 def _disk_stats(config: AppConfig) -> tuple[MemoryStat, str]:
     candidates = _storage_candidates(config)
     best_path = _nearest_existing_path(candidates[0]) if candidates else Path.home()
@@ -102,17 +152,18 @@ def _disk_stats(config: AppConfig) -> tuple[MemoryStat, str]:
     return MemoryStat(used=used_gb, total=total_gb, unit="GB"), str(best_path)
 
 
-def get_system_status(config: AppConfig) -> SystemStatus:
+def get_system_status(config: AppConfig, *, active_jobs: int = 0) -> SystemStatus:
     memory = _memory_stats()
     disk, disk_path = _disk_stats(config)
+    neural_load = min(95, active_jobs * 35) if active_jobs > 0 else 0
     return SystemStatus(
         platform=_read_sysctl("machdep.cpu.brand_string", platform.processor() or "Apple Silicon"),
         memory=memory,
-        mlxCache=MemoryStat(used=0.0, total=8.0, unit="GB"),
+        mlxCache=_mlx_cache_stats(config),
         diskSpace=disk,
         diskPath=disk_path,
-        neuralEngine=NeuralEngineStatus(active=True, load=0, status="MPS_ACTIVE"),
+        neuralEngine=NeuralEngineStatus(active=True, load=neural_load, status="MPS_ACTIVE"),
         temperature=42,
-        activeJobs=0,
-        loadedModel=LoadedModel(name="z-image-turbo", quantize="q8"),
+        activeJobs=active_jobs,
+        loadedModel=_loaded_model(config),
     )

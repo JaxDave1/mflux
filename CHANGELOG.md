@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### MFLUX Neural Interface v0.2 (2026-06-24)
+---
+
+## [neural-interface-v0.2] - 2026-06-24
+
+### MFLUX Neural Interface v0.2
 
 **Gallery (8A)**
 - Favorites filter, star badges, toggle on Output Details, `localStorage` persistence with prune-on-delete.
@@ -36,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Validation**
 - `scripts/v0_2_signoff.py` — Phase 8 sign-off suite (14 PASS, 2026-06-24).
-- `scripts/validation_pass.py` — 22/22 PASS (2026-06-24 re-run).
+- `scripts/validation_pass.py` — 23/23 PASS (2026-06-24 re-run, post Klein re-cache).
 - `scripts/smoke_test_neural_interface.py` — 32/32 PASS.
 
 ### MFLUX Neural Interface v0.1

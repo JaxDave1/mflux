@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from api.main import app  # noqa: E402
 from api.services.model_defaults import model_defaults  # noqa: E402
+from api.services.secrets import secrets_manager  # noqa: E402
 
 PASS = 0
 FAIL = 0
@@ -596,6 +597,125 @@ def validate_cached_module_jobs(client: TestClient) -> None:
         )
 
 
+def _job_output_path(job: dict) -> Path | None:
+    output = job.get("output") or {}
+    output_path = output.get("output_path")
+    if output_path:
+        return Path(str(output_path))
+    for arg in reversed(job.get("command", [])):
+        if isinstance(arg, str) and (arg.endswith(".safetensors") or arg.endswith(".png")):
+            return Path(arg)
+    return None
+
+
+def validate_system_status_truth(client: TestClient) -> None:
+    config = client.get("/api/config").json().get("data", {})
+    status = client.get("/api/system/status").json().get("data", {})
+    if not config or not status:
+        record("System status runtime truth", "FAIL", "missing config or status payload")
+        return
+
+    expected_model = config.get("generation", {}).get("defaultModel")
+    loaded = status.get("loadedModel") or {}
+    if loaded.get("name") == expected_model:
+        record("System status default model", "PASS", expected_model)
+    else:
+        record(
+            "System status default model",
+            "FAIL",
+            f"expected {expected_model}, got {loaded.get('name')}",
+        )
+
+    mlx_cache = status.get("mlxCache") or {}
+    if mlx_cache.get("total") == config.get("system", {}).get("cacheLimit"):
+        record("System status MLX cache limit", "PASS", f"{mlx_cache.get('total')} GB")
+    else:
+        record("System status MLX cache limit", "FAIL", json.dumps(mlx_cache)[:180])
+
+    if mlx_cache.get("used", 0) > 0:
+        record("System status MLX cache used", "PASS", f"{mlx_cache.get('used')} GB")
+    else:
+        record("System status MLX cache used", "SKIP", "cache dirs empty or unreadable")
+
+    if status.get("diskPath"):
+        record("System status disk path", "PASS", status["diskPath"])
+    else:
+        record("System status disk path", "FAIL", "diskPath missing")
+
+
+def validate_civitai_download_e2e(client: TestClient) -> None:
+    if not secrets_manager.is_set("civitai"):
+        record("CivitAI download E2E", "SKIP", "no civitai token in vault")
+        return
+
+    version_raw = os.environ.get("MFLUX_VALIDATION_CIVITAI_VERSION_ID", "").strip()
+    if not version_raw:
+        record("CivitAI download E2E", "SKIP", "set MFLUX_VALIDATION_CIVITAI_VERSION_ID for full E2E")
+        return
+
+    try:
+        version_id = int(version_raw)
+    except ValueError:
+        record("CivitAI download E2E", "FAIL", f"invalid version id: {version_raw}")
+        return
+
+    job = submit_job(client, "civitai_download", {"modelVersionId": version_id, "destination": "lora"})
+    if not job:
+        record("CivitAI download E2E", "FAIL", "submission rejected")
+        return
+    record("CivitAI download job accepted", "PASS", job["id"])
+
+    finished = wait_for_job(client, job["id"], timeout_s=1200)
+    if not finished or finished.get("state") != "succeeded":
+        record("CivitAI download E2E", "FAIL", json.dumps(finished)[:240] if finished else "timeout")
+        return
+
+    output_path = _job_output_path(finished)
+    if not output_path or not output_path.exists() or output_path.suffix != ".safetensors":
+        record("CivitAI download E2E", "FAIL", str(output_path))
+        return
+    record("CivitAI download E2E", "PASS", f"{job['id']} -> {output_path.name}")
+
+
+def validate_model_export_e2e(client: TestClient) -> None:
+    if os.environ.get("MFLUX_SKIP_MODEL_EXPORT_E2E", "").strip().lower() in {"1", "true", "yes"}:
+        record("Model export E2E", "SKIP", "MFLUX_SKIP_MODEL_EXPORT_E2E set")
+        return
+
+    builtins = _builtin_models(client)
+    exportable = [
+        model
+        for model in builtins
+        if model.get("metadata", {}).get("cached") and model.get("metadata", {}).get("exportable")
+    ]
+    if not exportable:
+        record("Model export E2E", "SKIP", "no cached exportable builtin")
+        return
+
+    preferred = next((model for model in exportable if model.get("id") == "z-image-turbo"), exportable[0])
+    target_id = preferred["id"]
+    job = submit_job(client, "model_export", {"model_name": target_id, "quantize": 8})
+    if not job:
+        record("Model export E2E", "FAIL", "submission rejected")
+        return
+    record("Model export job accepted", "PASS", f"{target_id} ({job['id']})")
+
+    finished = wait_for_job(client, job["id"], timeout_s=3600)
+    if not finished or finished.get("state") != "succeeded":
+        record("Model export E2E", "FAIL", json.dumps(finished)[:240] if finished else "timeout")
+        return
+
+    output_path = _job_output_path(finished)
+    if not output_path or not output_path.exists():
+        record("Model export E2E", "FAIL", f"missing output dir: {output_path}")
+        return
+    weights = list(output_path.rglob("*.safetensors"))
+    if not weights:
+        record("Model export E2E", "FAIL", f"no safetensors under {output_path}")
+        return
+    record("Model export E2E", "PASS", f"{job['id']} -> {weights[0].name}")
+
+
 def validate_live_preview(client: TestClient) -> None:
     job_data = submit_job(
         client,
@@ -654,11 +774,14 @@ def main() -> int:
     record("Job queue idle before validation", "PASS")
 
     validate_module_model_registry(client)
+    validate_system_status_truth(client)
     validate_gallery_img2img_handoff(client)
     validate_negative_prompt(client)
     validate_lora_stack(client)
     validate_live_preview(client)
     validate_cached_module_jobs(client)
+    validate_civitai_download_e2e(client)
+    validate_model_export_e2e(client)
 
     print("\n=== Validation Summary ===")
     print(f"PASS={PASS} FAIL={FAIL} SKIP={SKIP}")
