@@ -10,6 +10,8 @@ export const offlineSystemStatus: SystemStatus = {
   platform: "Apple Silicon",
   memory: { used: 0, total: 0, unit: "GB" },
   mlxCache: { used: 0, total: 0, unit: "GB" },
+  modelDiskCache: { used: 0, total: 0, unit: "GB" },
+  cachedModelCount: 0,
   diskSpace: { used: 0, total: 0, unit: "GB" },
   diskPath: null,
   neuralEngine: { active: false, load: 0, status: "offline" },

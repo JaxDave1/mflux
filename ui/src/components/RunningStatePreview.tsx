@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { Job } from "../lib/types";
+import { useJobStore } from "../stores/useJobStore";
 
 function jobStatusPill(job: Job | null) {
   if (!job) {
@@ -35,6 +37,9 @@ export function RunningStatePreview({
   job: Job | null;
   stepwiseImages: string[];
 }) {
+  const cancelJob = useJobStore((state) => state.cancelJob);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const latestPreview = stepwiseImages[stepwiseImages.length - 1];
   const isRunning = job?.state === "running" || job?.state === "queued";
   const finalImage = job?.state === "succeeded" ? job.output?.output_url : null;
@@ -47,6 +52,21 @@ export function RunningStatePreview({
       ? "Rendering stepwise preview…"
       : "Generation in progress — output appears here when complete."
     : "NO ACTIVE JOB";
+
+  const handleCancel = async () => {
+    if (!job) {
+      return;
+    }
+    setCancelError(null);
+    setCancelling(true);
+    try {
+      await cancelJob(job.id);
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "Failed to cancel job");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="module-preview-stage overflow-hidden rounded-panel border border-outline-variant/60 bg-surface-container-low">
@@ -82,12 +102,29 @@ export function RunningStatePreview({
             <span className="status-pill-dot" />
             {status.label}
           </span>
-          <span className="font-mono text-xs text-[var(--color-text-secondary)]">
-            {job?.progress.step && job.progress.total_steps
-              ? `STEP ${job.progress.step}/${job.progress.total_steps}`
-              : `${percent || 0}%`}
-          </span>
+          <div className="flex items-center gap-2">
+            {isRunning && job ? (
+              <button
+                type="button"
+                onClick={() => void handleCancel()}
+                disabled={cancelling}
+                className="rounded-md border border-error/35 bg-error/10 px-2 py-1 font-label text-[10px] uppercase tracking-[0.12em] text-error transition hover:bg-error/20 disabled:opacity-50"
+              >
+                {cancelling ? "Cancelling…" : "Cancel"}
+              </button>
+            ) : null}
+            <span className="font-mono text-xs text-[var(--color-text-secondary)]">
+              {job?.progress.step && job.progress.total_steps
+                ? `STEP ${job.progress.step}/${job.progress.total_steps}`
+                : `${percent || 0}%`}
+            </span>
+          </div>
         </div>
+        {cancelError ? (
+          <div className="rounded-md border border-error/25 bg-error/10 px-2 py-2 font-label text-[10px] uppercase tracking-[0.12em] text-error">
+            {cancelError}
+          </div>
+        ) : null}
         <div className="bar-track h-1.5">
           <div className="bar-fill h-full" style={{ width: `${Math.max(0, Math.min(100, percent || 0))}%` }} />
         </div>

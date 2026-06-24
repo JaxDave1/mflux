@@ -19,6 +19,8 @@ export interface SystemStatus {
   platform: string;
   memory: { used: number; total: number; unit: string };
   mlxCache: { used: number; total: number; unit: string };
+  modelDiskCache: { used: number; total: number; unit: string };
+  cachedModelCount: number;
   diskSpace: { used: number; total: number; unit: string };
   diskPath?: string | null;
   neuralEngine: { active: boolean; load: number; status: string };

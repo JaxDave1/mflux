@@ -94,7 +94,7 @@ Four v0.2 work packages deferred from v0.1:
 |---|---|---|
 | `scripts/v0_2_signoff.py` | **14 PASS / 0 FAIL / 0 SKIP** | `scripts/v0_2_signoff_results.json` |
 | `scripts/smoke_test_neural_interface.py` | **32 PASS / 0 FAIL / 0 SKIP** | `scripts/smoke_test_results.json` |
-| `scripts/validation_pass.py` | **22 PASS / 0 FAIL / 0 SKIP** | `scripts/validation_pass_results.json` |
+| `scripts/validation_pass.py` | **23 PASS / 0 FAIL / 0 SKIP** | `scripts/validation_pass_results.json` |
 
 v0.2-specific highlights from `v0_2_signoff.py`:
 - Gallery sidecar read + delete
@@ -105,6 +105,8 @@ v0.2-specific highlights from `v0_2_signoff.py`:
 - `model_export` dispatches `mflux.models.common.cli.save`
 
 **Note:** Sign-off cache-delete tests remove HF hub dirs for `flux2-klein-4b` and `z-image-turbo`. Re-download from Models if those cards show NOT CACHED.
+
+**Follow-on:** Phase 9 (`PHASE_9_V0_3.md`) and Phase 10 (`PHASE_10_V0_4.md`) — v0.3 tag `neural-interface-v0.3`.
 
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24

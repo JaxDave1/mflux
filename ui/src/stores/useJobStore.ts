@@ -120,7 +120,13 @@ export const useJobStore = create<JobState>((set, get) => ({
     const source = streams.get(id);
     source?.close();
     streams.delete(id);
-    set((state) => ({ jobs: upsertJob(state.jobs, job), error: null }));
+    set((state) => ({
+      jobs: state.jobs
+        .map((item) => (item.id === id ? job : item))
+        .filter((item) => !terminalStates.has(item.state)),
+      error: null
+    }));
+    await get().loadJobs(false);
   },
 
   activeJobsForModule: (module) => get().jobs.filter((job) => job.module === module && !terminalStates.has(job.state))

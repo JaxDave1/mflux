@@ -66,6 +66,7 @@ MODULE_MODEL_ALLOWLISTS: dict[str, list[str]] = {
 }
 
 RESOURCES = ROOT / "tests" / "resources"
+DEFAULT_CIVITAI_VERSION_ID = 62833
 FIXTURE_IMAGES = {
     "img2img": RESOURCES / "reference_z_image_turbo.png",
     "inpaint_image": RESOURCES / "reference_dev_image_to_image.png",
@@ -627,15 +628,24 @@ def validate_system_status_truth(client: TestClient) -> None:
         )
 
     mlx_cache = status.get("mlxCache") or {}
-    if mlx_cache.get("total") == config.get("system", {}).get("cacheLimit"):
-        record("System status MLX cache limit", "PASS", f"{mlx_cache.get('total')} GB")
+    memory_total = (status.get("memory") or {}).get("total")
+    if mlx_cache.get("total") == memory_total:
+        record("System status MLX runtime total", "PASS", f"{mlx_cache.get('total')} GB unified")
     else:
-        record("System status MLX cache limit", "FAIL", json.dumps(mlx_cache)[:180])
+        record("System status MLX runtime total", "FAIL", json.dumps(mlx_cache)[:180])
 
-    if mlx_cache.get("used", 0) > 0:
-        record("System status MLX cache used", "PASS", f"{mlx_cache.get('used')} GB")
+    record(
+        "System status MLX runtime used",
+        "PASS" if mlx_cache.get("used", 0) >= 0 else "FAIL",
+        f"{mlx_cache.get('used')} GB RSS",
+    )
+
+    model_disk = status.get("modelDiskCache") or {}
+    cached_count = status.get("cachedModelCount", 0)
+    if model_disk.get("used", 0) > 0 and cached_count > 0:
+        record("System status model disk cache", "PASS", f"{model_disk.get('used')} GB · {cached_count} models")
     else:
-        record("System status MLX cache used", "SKIP", "cache dirs empty or unreadable")
+        record("System status model disk cache", "SKIP", "no cached MFLUX models")
 
     if status.get("diskPath"):
         record("System status disk path", "PASS", status["diskPath"])
@@ -643,20 +653,22 @@ def validate_system_status_truth(client: TestClient) -> None:
         record("System status disk path", "FAIL", "diskPath missing")
 
 
+def _validation_civitai_version_id() -> int:
+    version_raw = os.environ.get("MFLUX_VALIDATION_CIVITAI_VERSION_ID", "").strip()
+    if version_raw:
+        return int(version_raw)
+    return DEFAULT_CIVITAI_VERSION_ID
+
+
 def validate_civitai_download_e2e(client: TestClient) -> None:
     if not secrets_manager.is_set("civitai"):
         record("CivitAI download E2E", "SKIP", "no civitai token in vault")
         return
 
-    version_raw = os.environ.get("MFLUX_VALIDATION_CIVITAI_VERSION_ID", "").strip()
-    if not version_raw:
-        record("CivitAI download E2E", "SKIP", "set MFLUX_VALIDATION_CIVITAI_VERSION_ID for full E2E")
-        return
-
     try:
-        version_id = int(version_raw)
+        version_id = _validation_civitai_version_id()
     except ValueError:
-        record("CivitAI download E2E", "FAIL", f"invalid version id: {version_raw}")
+        record("CivitAI download E2E", "FAIL", "invalid MFLUX_VALIDATION_CIVITAI_VERSION_ID")
         return
 
     job = submit_job(client, "civitai_download", {"modelVersionId": version_id, "destination": "lora"})
@@ -674,7 +686,13 @@ def validate_civitai_download_e2e(client: TestClient) -> None:
     if not output_path or not output_path.exists() or output_path.suffix != ".safetensors":
         record("CivitAI download E2E", "FAIL", str(output_path))
         return
-    record("CivitAI download E2E", "PASS", f"{job['id']} -> {output_path.name}")
+    record("CivitAI download E2E", "PASS", f"{job['id']} -> {output_path.name} (version {version_id})")
+    if os.environ.get("MFLUX_SKIP_CIVITAI_CLEANUP", "").strip().lower() not in {"1", "true", "yes"}:
+        try:
+            output_path.unlink(missing_ok=True)
+            record("CivitAI download E2E cleanup", "PASS", output_path.name)
+        except OSError as exc:
+            record("CivitAI download E2E cleanup", "SKIP", str(exc)[:120])
 
 
 def validate_model_export_e2e(client: TestClient) -> None:

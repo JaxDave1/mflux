@@ -4,13 +4,13 @@ import { Icon } from "../components";
 import { api } from "../lib/api";
 import { offlineModelsResponse, offlineSystemStatus } from "../lib/fallbacks";
 import { formatModelLabel } from "../lib/labels";
-import type { GenerationOutput as GalleryItem, JobState, ModelsResponse, SystemStatus } from "../lib/types";
+import type { GenerationOutput as GalleryItem, JobState, ModelsResponse } from "../lib/types";
 import { useAppStore } from "../stores/useAppStore";
 import { useJobStore } from "../stores/useJobStore";
 
 const terminalJobStates = new Set<JobState>(["succeeded", "failed", "cancelled", "timed_out"]);
-const STATUS_POLL_MS = 5000;
-const MODELS_POLL_MS = 30000;
+const MODELS_POLL_MS = 15000;
+const GALLERY_POLL_MS = 15000;
 
 function clampPercent(value: number, max: number) {
   if (max <= 0) {
@@ -21,6 +21,20 @@ function clampPercent(value: number, max: number) {
 
 function formatStat(value: number) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function jobProgressPercent(progress: {
+  percent: number | null;
+  step: number | null;
+  total_steps: number | null;
+}) {
+  if (progress.percent != null) {
+    return progress.percent;
+  }
+  if (progress.step != null && progress.total_steps) {
+    return Math.round((progress.step / progress.total_steps) * 100);
+  }
+  return null;
 }
 
 function TelemetryBar({
@@ -94,8 +108,8 @@ function shortenPath(path: string, maxLength = 42) {
 
 export function Dashboard() {
   const backendOnline = useAppStore((state) => state.backendOnline);
+  const systemStatus = useAppStore((state) => state.systemStatus) ?? offlineSystemStatus;
   const jobs = useJobStore((state) => state.jobs);
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>(offlineSystemStatus);
   const [models, setModels] = useState<ModelsResponse>(offlineModelsResponse);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,32 +117,14 @@ export function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     let modelsPollElapsed = 0;
-
-    const applyStatus = (status: SystemStatus) => {
-      if (!cancelled) {
-        setSystemStatus(status);
-      }
-    };
-
-    const applyModels = (nextModels: ModelsResponse) => {
-      if (!cancelled) {
-        setModels(nextModels);
-      }
-    };
-
-    const refreshStatus = async () => {
-      try {
-        applyStatus(await api.systemStatus());
-      } catch {
-        if (!cancelled) {
-          setSystemStatus(offlineSystemStatus);
-        }
-      }
-    };
+    let galleryPollElapsed = 0;
 
     const refreshModels = async () => {
       try {
-        applyModels(await api.models());
+        const nextModels = await api.models();
+        if (!cancelled) {
+          setModels(nextModels);
+        }
       } catch {
         if (!cancelled) {
           setModels(offlineModelsResponse);
@@ -136,29 +132,40 @@ export function Dashboard() {
       }
     };
 
-    void Promise.allSettled([api.systemStatus(), api.models(), api.gallery()]).then(
-      ([statusResult, modelsResult, galleryResult]) => {
-        if (cancelled) {
-          return;
+    const refreshGallery = async () => {
+      try {
+        const response = await api.gallery();
+        if (!cancelled) {
+          setGallery(response.items);
         }
-
-        setSystemStatus(
-          statusResult.status === "fulfilled" ? statusResult.value : offlineSystemStatus
-        );
-        setModels(modelsResult.status === "fulfilled" ? modelsResult.value : offlineModelsResponse);
-        setGallery(galleryResult.status === "fulfilled" ? galleryResult.value.items : []);
-        setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setGallery([]);
+        }
       }
-    );
+    };
+
+    void Promise.allSettled([api.models(), api.gallery()]).then(([modelsResult, galleryResult]) => {
+      if (cancelled) {
+        return;
+      }
+      setModels(modelsResult.status === "fulfilled" ? modelsResult.value : offlineModelsResponse);
+      setGallery(galleryResult.status === "fulfilled" ? galleryResult.value.items : []);
+      setLoading(false);
+    });
 
     const timer = window.setInterval(() => {
-      modelsPollElapsed += STATUS_POLL_MS;
-      void refreshStatus();
+      modelsPollElapsed += 2000;
+      galleryPollElapsed += 2000;
       if (modelsPollElapsed >= MODELS_POLL_MS) {
         modelsPollElapsed = 0;
         void refreshModels();
       }
-    }, STATUS_POLL_MS);
+      if (galleryPollElapsed >= GALLERY_POLL_MS) {
+        galleryPollElapsed = 0;
+        void refreshGallery();
+      }
+    }, 2000);
 
     return () => {
       cancelled = true;
@@ -171,49 +178,75 @@ export function Dashboard() {
     [gallery]
   );
 
-  const memoryUsed = systemStatus?.memory.used ?? 0;
-  const memoryTotal = systemStatus?.memory.total ?? 0;
-  const mlxCacheUsed = systemStatus?.mlxCache.used ?? 0;
-  const mlxCacheTotal = systemStatus?.mlxCache.total ?? 0;
-  const diskUsed = systemStatus?.diskSpace.used ?? 0;
-  const diskTotal = systemStatus?.diskSpace.total ?? 0;
-  const diskFree = Math.max(0, Number((diskTotal - diskUsed).toFixed(1)));
-  const memoryPercent = clampPercent(memoryUsed, memoryTotal);
-  const mlxCachePercent = clampPercent(mlxCacheUsed, mlxCacheTotal);
-  const diskUsedPercent = clampPercent(diskUsed, diskTotal);
-  const neuralPercent = Math.max(
-    systemStatus?.neuralEngine.active ? 82 : 0,
-    systemStatus?.neuralEngine.load
-      ? clampPercent(
-          systemStatus.neuralEngine.load <= 1
-            ? systemStatus.neuralEngine.load * 100
-            : systemStatus.neuralEngine.load,
-          100
-        )
-      : 0
-  );
-
   const activeJobs = useMemo(
     () => jobs.filter((job) => !terminalJobStates.has(job.state)),
     [jobs]
   );
+
   const cachedBuiltinCount = useMemo(
     () =>
       models.builtin.filter((model) => model.metadata.cached || model.metadata.installed).length,
     [models.builtin]
   );
+  const activeJobsCount = Math.max(systemStatus.activeJobs, activeJobs.length);
+
+  const memoryUsed = systemStatus.memory.used ?? 0;
+  const memoryTotal = systemStatus.memory.total ?? 0;
+  const mlxRuntimeUsed = systemStatus.mlxCache.used ?? 0;
+  const mlxRuntimeTotal = systemStatus.mlxCache.total ?? memoryTotal;
+  const modelDiskUsed = systemStatus.modelDiskCache?.used ?? 0;
+  const cachedModelCount = systemStatus.cachedModelCount ?? cachedBuiltinCount;
+  const diskUsed = systemStatus.diskSpace.used ?? 0;
+  const diskTotal = systemStatus.diskSpace.total ?? 0;
+  const diskFree = Math.max(0, Number((diskTotal - diskUsed).toFixed(1)));
+  const memoryPercent = clampPercent(memoryUsed, memoryTotal);
+  const mlxRuntimePercent = clampPercent(mlxRuntimeUsed, mlxRuntimeTotal);
+  const mlxRuntimeDetail =
+    activeJobsCount > 0 ? "INFERENCE PROCESS RSS" : "IDLE · NO ACTIVE INFERENCE";
+  const modelDiskDetail = `${cachedModelCount} MFLUX MODEL${cachedModelCount === 1 ? "" : "S"} ON DISK`;
+  const diskUsedPercent = clampPercent(diskUsed, diskTotal);
+
+  const liveNeuralPercent = useMemo(() => {
+    const runningJobs = activeJobs.filter((job) => job.state === "running");
+    if (runningJobs.length) {
+      const progressValues = runningJobs
+        .map((job) => jobProgressPercent(job.progress))
+        .filter((value): value is number => value != null);
+      if (progressValues.length) {
+        return Math.max(...progressValues);
+      }
+    }
+    if (activeJobs.some((job) => job.state === "queued")) {
+      return 3;
+    }
+    return systemStatus.neuralEngine.load ?? 0;
+  }, [activeJobs, systemStatus.neuralEngine.load]);
+
+  const runningJob = activeJobs.find((job) => job.state === "running") ?? activeJobs[0];
+  const runningModelId =
+    (typeof runningJob?.params?.model === "string" && runningJob.params.model) ||
+    (typeof runningJob?.params?.model_name === "string" && runningJob.params.model_name) ||
+    null;
+  const runningQuantize =
+    typeof runningJob?.params?.quantize === "number"
+      ? runningJob.params.quantize
+        ? `Q${runningJob.params.quantize}`
+        : "OFF"
+      : null;
 
   const platformLabel = (systemStatus.platform || offlineSystemStatus.platform).toUpperCase();
   const loadedModelName = formatModelLabel(
-    systemStatus.loadedModel?.name ??
-      models.builtin.find((model) => model.active)?.name ??
-      offlineSystemStatus.loadedModel?.name ??
-      "FLUX.1 Dev"
+    runningModelId ?? systemStatus.loadedModel?.name ?? offlineSystemStatus.loadedModel?.name ?? "FLUX.1 Dev"
   ).toUpperCase();
-  const loadedModelQuantize = (systemStatus.loadedModel?.quantize ?? "q8").toUpperCase();
+  const loadedModelQuantize = (
+    runningQuantize ?? systemStatus.loadedModel?.quantize ?? "q8"
+  ).toUpperCase();
+  const modelCardDetail = runningModelId
+    ? `RUNNING · ${loadedModelQuantize}`
+    : `DEFAULT · ${loadedModelQuantize} · ${cachedModelCount} CACHED`;
+
   const platformDetail =
     memoryTotal > 0 ? `MEMORY LOAD ${memoryPercent}%` : "LOCAL APPLE SILICON";
-  const activeJobsCount = Math.max(systemStatus.activeJobs, activeJobs.length);
   const activeJobsValue = `${activeJobsCount}`;
   const activeJobsDetail =
     backendOnline === false
@@ -221,10 +254,18 @@ export function Dashboard() {
       : activeJobsCount > 0
         ? activeJobs
             .slice(0, 2)
-            .map((job) => `${job.module.replace(/_/g, "-").toUpperCase()} · ${job.state.toUpperCase()}`)
+            .map((job) => {
+              const progress = jobProgressPercent(job.progress);
+              const progressLabel = progress != null ? ` ${progress}%` : "";
+              return `${job.module.replace(/_/g, "-").toUpperCase()} · ${job.state.toUpperCase()}${progressLabel}`;
+            })
             .join(" • ")
         : "QUEUE STATUS: STEADY";
   const diskPathLabel = systemStatus.diskPath ? shortenPath(systemStatus.diskPath) : "PATH UNAVAILABLE";
+  const engineDetail =
+    activeJobsCount > 0
+      ? `${liveNeuralPercent}% LOAD · ${systemStatus.neuralEngine.status}`
+      : systemStatus.neuralEngine.status.replace(/_/g, " ");
 
   if (loading) {
     return (
@@ -247,11 +288,12 @@ export function Dashboard() {
           <p className="font-body text-[15px] tracking-wide text-on-surface-variant">
             {backendOnline === false
               ? "Backend offline • Showing local shell state"
-              : "All systems nominal • Local Flux inference ready"}
+              : activeJobsCount > 0
+                ? `Live telemetry • ${activeJobsCount} job${activeJobsCount === 1 ? "" : "s"} in flight`
+                : `Live telemetry • ${gallery.length} outputs indexed`}
           </p>
         </header>
 
-        {/* ── Top cards ── */}
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="mirror-panel rounded-xl p-5 transition duration-150">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -270,8 +312,10 @@ export function Dashboard() {
               <Icon className="text-base text-secondary" name="bolt" />
             </div>
             <div className="space-y-2">
-              <div className="titanium-text font-headline text-[1.7rem] font-semibold leading-tight">MLX NEURAL</div>
-              <div className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">OPTIMIZED FOR METAL</div>
+              <div className="titanium-text font-headline text-[1.7rem] font-semibold leading-tight">
+                {liveNeuralPercent > 0 ? `${liveNeuralPercent}%` : "IDLE"}
+              </div>
+              <div className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">{engineDetail}</div>
             </div>
           </div>
 
@@ -292,19 +336,18 @@ export function Dashboard() {
 
           <div className="mirror-panel rounded-xl p-5 transition duration-150">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <span className="font-label text-[10px] uppercase tracking-[0.22em] text-on-surface-variant">MODEL LOADED</span>
+              <span className="font-label text-[10px] uppercase tracking-[0.22em] text-on-surface-variant">MODEL</span>
               <Icon className="text-base text-secondary" name="view_in_ar" />
             </div>
             <div className="space-y-2">
               <div className="titanium-text font-headline text-[1.7rem] font-semibold leading-tight">{loadedModelName}</div>
               <div className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">
-                DEFAULT · {loadedModelQuantize} · {cachedBuiltinCount} CACHED
+                {modelCardDetail}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Telemetry + Recent ── */}
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
           <section className="panel-composite scan-grid rounded-2xl p-6">
             <div className="mb-6 flex items-center gap-3">
@@ -322,23 +365,29 @@ export function Dashboard() {
                 percent={memoryPercent}
               />
               <TelemetryBar
-                label="MLX Cache"
-                value={`${formatStat(mlxCacheUsed)} GB / ${formatStat(mlxCacheTotal)} GB`}
-                detail={`${mlxCachePercent}% OF LIMIT`}
-                percent={mlxCachePercent}
+                label="MLX Runtime"
+                value={`${formatStat(mlxRuntimeUsed)} GB / ${formatStat(mlxRuntimeTotal)} GB`}
+                detail={mlxRuntimeDetail}
+                percent={mlxRuntimePercent}
+              />
+              <TelemetryBar
+                label="Model Disk Cache"
+                value={`${formatStat(modelDiskUsed)} GB`}
+                detail={modelDiskDetail}
+                percent={diskTotal > 0 ? clampPercent(modelDiskUsed, diskTotal) : 0}
               />
               <TelemetryBar
                 label="Disk Space"
-                value={`${formatStat(diskFree)} GB FREE`}
+                value={`${formatStat(diskFree)} GB FREE / ${formatStat(diskTotal)} GB`}
                 detail={diskPathLabel}
                 percent={diskUsedPercent}
               />
               <TelemetryBar
                 label="Neural Engine"
-                value={systemStatus.neuralEngine.active ? "ACTIVE" : "OFFLINE"}
-                detail={`${neuralPercent}% LOAD`}
-                percent={neuralPercent}
-                tone={systemStatus.neuralEngine.active ? "cyan" : "error"}
+                value={activeJobsCount > 0 ? "INFERENCE ACTIVE" : "STANDBY"}
+                detail={`${liveNeuralPercent}% LOAD`}
+                percent={liveNeuralPercent}
+                tone={activeJobsCount > 0 ? "cyan" : "error"}
               />
             </div>
           </section>
@@ -355,7 +404,7 @@ export function Dashboard() {
                 to="/gallery"
                 className="font-label text-[10px] uppercase tracking-[0.18em] text-secondary transition hover:text-metal-chrome"
               >
-                View All
+                {gallery.length > 0 ? `${gallery.length} TOTAL` : "View All"}
               </Link>
             </div>
 
@@ -388,7 +437,6 @@ export function Dashboard() {
           </aside>
         </div>
 
-        {/* ── Quick actions ── */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <QuickActionCard to="/txt2img" icon="edit_square" title="QUICK TXT2IMG" subtitle="FROM PROMPT" />
           <QuickActionCard to="/img2img" icon="image_search" title="QUICK IMG2IMG" subtitle="REFERENCE TRANSFORM" />

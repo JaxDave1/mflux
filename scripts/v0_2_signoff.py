@@ -300,6 +300,44 @@ def validate_cache_delete(client: TestClient) -> None:
         record("Cache delete updates model card", "FAIL", f"{model_id} still cached")
 
 
+def validate_queued_job_cancel(client: TestClient) -> None:
+    from unittest.mock import patch
+
+    from api.services.job_manager import PreparedJob
+
+    with patch("api.services.job_manager._prepare_command") as prep:
+        prep.return_value = PreparedJob(
+            command=["sleep", "30"],
+            output_path="/tmp/mflux_signoff_cancel.out",
+            params={"model": "dev"},
+            prompt="signoff cancel",
+            model="dev",
+            seed=1,
+        )
+        created = client.post(
+            "/api/jobs",
+            json={
+                "module": "txt2img",
+                "params": {"prompt": "signoff cancel", "model": "dev", "width": 64, "height": 64, "steps": 1},
+            },
+        )
+        if created.status_code != 201:
+            record("Queued job cancel", "FAIL", created.text[:240])
+            return
+        job_id = created.json()["data"]["id"]
+
+    time.sleep(0.05)
+    cancel = client.delete(f"/api/jobs/{job_id}")
+    if cancel.status_code != 200 or cancel.json().get("data", {}).get("state") != "cancelled":
+        record("Queued job cancel", "FAIL", cancel.text[:240])
+        return
+    active = client.get("/api/jobs").json().get("data", {}).get("jobs", [])
+    if any(job.get("id") == job_id for job in active):
+        record("Queued job cancel removes active job", "FAIL", job_id)
+        return
+    record("Queued job cancel", "PASS", job_id)
+
+
 def validate_civitai_download(client: TestClient) -> None:
     if not secrets_manager.is_set("civitai"):
         record("CivitAI download job accepted", "SKIP", "no civitai token in vault")
@@ -367,6 +405,7 @@ def main() -> int:
     validate_lora_job_acceptance(client)
     validate_live_preview_modules(client)
     validate_cache_delete(client)
+    validate_queued_job_cancel(client)
     validate_civitai_download(client)
     validate_model_export(client)
 

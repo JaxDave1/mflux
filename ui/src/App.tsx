@@ -32,7 +32,8 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.allSettled([api.health(), api.systemStatus()]).then(([healthResult, statusResult]) => {
+    const refreshRuntime = async () => {
+      const [healthResult, statusResult] = await Promise.allSettled([api.health(), api.systemStatus()]);
       if (cancelled) {
         return;
       }
@@ -49,10 +50,16 @@ export default function App() {
       }
 
       setBackendOnline(false);
-    });
+    };
+
+    void refreshRuntime();
+    const timer = window.setInterval(() => {
+      void refreshRuntime();
+    }, 2000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [setBackendOnline, setSystemStatus]);
 

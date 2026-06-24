@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../lib/api";
-import type { Job } from "../lib/types";
+import type { Job, JobState } from "../lib/types";
 import { useJobStore } from "../stores/useJobStore";
 import { Icon } from "./Icon";
+
+const terminalJobStates = new Set<JobState>(["succeeded", "failed", "cancelled", "timed_out"]);
 
 const moduleLabels: Record<string, string> = {
   txt2img: "Txt2Img",
@@ -43,34 +44,25 @@ function formatDuration(ms: number | null | undefined) {
 
 export function JobPanel() {
   const jobs = useJobStore((state) => state.jobs);
-  const loadJobs = useJobStore((state) => state.loadJobs);
   const cancelJob = useJobStore((state) => state.cancelJob);
-  const [shellJobs, setShellJobs] = useState<Job[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const activeJobs = useMemo(
-    () => {
-      const byId = new Map<string, Job>();
-      [...jobs, ...shellJobs].forEach((job) => {
-        if (!["succeeded", "failed", "cancelled", "timed_out"].includes(job.state)) {
-          byId.set(job.id, job);
-        }
-      });
-      return [...byId.values()];
-    },
-    [jobs, shellJobs]
+    () => jobs.filter((job) => !terminalJobStates.has(job.state)),
+    [jobs]
   );
 
-  useEffect(() => {
-    const refreshJobs = async () => {
-      const response = await api.jobs(false);
-      setShellJobs(response.jobs);
-      await loadJobs(false);
-    };
-    void refreshJobs();
-    const timer = window.setInterval(() => {
-      void refreshJobs();
-    }, 2000);
-    return () => window.clearInterval(timer);
-  }, [loadJobs]);
+  const handleCancel = async (job: Job) => {
+    setCancelError(null);
+    setCancellingId(job.id);
+    try {
+      await cancelJob(job.id);
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "Failed to cancel job");
+    } finally {
+      setCancellingId((current) => (current === job.id ? null : current));
+    }
+  };
 
   if (!activeJobs.length) {
     return null;
@@ -78,6 +70,11 @@ export function JobPanel() {
 
   return (
     <aside className="fixed bottom-5 right-5 z-[100] w-[360px] max-w-[calc(100vw-112px)] space-y-3">
+      {cancelError ? (
+        <div className="rounded-xl border border-error/30 bg-error/10 px-3 py-2 font-label text-[10px] uppercase tracking-[0.12em] text-error">
+          {cancelError}
+        </div>
+      ) : null}
       {activeJobs.map((job) => {
         const percent = job.progress.percent ?? 0;
         const hasSteps = job.progress.step !== null && job.progress.total_steps !== null;
@@ -103,10 +100,11 @@ export function JobPanel() {
               </div>
               <button
                 type="button"
-                onClick={() => void cancelJob(job.id)}
-                className="rounded-md border border-error/35 bg-error/10 px-2 py-1 font-label text-[10px] uppercase tracking-[0.12em] text-error transition hover:bg-error/20"
+                onClick={() => void handleCancel(job)}
+                disabled={cancellingId === job.id}
+                className="rounded-md border border-error/35 bg-error/10 px-2 py-1 font-label text-[10px] uppercase tracking-[0.12em] text-error transition hover:bg-error/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cancel
+                {cancellingId === job.id ? "Cancelling…" : "Cancel"}
               </button>
             </div>
 

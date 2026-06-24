@@ -109,17 +109,6 @@ export function Gallery() {
     setPage((value) => Math.min(value, pageCount));
   }, [pageCount]);
 
-  useEffect(() => {
-    if (!selected) {
-      return;
-    }
-    const index = filteredItems.findIndex((item) => item.id === selected.id);
-    if (index === -1) {
-      return;
-    }
-    setPage(Math.floor(index / GALLERY_PAGE_SIZE) + 1);
-  }, [filteredItems, selected?.id]);
-
   const outputFeedTitle =
     selectedIds.size > 0 ? `OUTPUT FEED · ${selectedIds.size} SELECTED` : "OUTPUT FEED";
 
@@ -191,13 +180,25 @@ export function Gallery() {
       setFavoriteIds(nextFavorites);
 
       const remaining = items.filter((item) => !deletedIds.has(item.id));
+      const remainingFiltered = filteredItems.filter((item) => !deletedIds.has(item.id));
+      const nextPageCount = Math.max(1, Math.ceil(remainingFiltered.length / GALLERY_PAGE_SIZE));
+      const nextPage = Math.min(currentPage, nextPageCount);
+      const nextPageStart = (nextPage - 1) * GALLERY_PAGE_SIZE;
+      const nextPageItems = remainingFiltered.slice(nextPageStart, nextPageStart + GALLERY_PAGE_SIZE);
+
       setItems(remaining);
+      setPage(nextPage);
       setSelectedIds((current) => {
         const next = new Set(current);
         deletedIds.forEach((id) => next.delete(id));
         return next;
       });
-      setSelected((current) => (current && deletedIds.has(current.id) ? remaining[0] ?? null : current));
+      setSelected((current) => {
+        if (!current || !deletedIds.has(current.id)) {
+          return current;
+        }
+        return nextPageItems[0] ?? remainingFiltered[remainingFiltered.length - 1] ?? null;
+      });
       setPendingDelete(null);
       setPendingBulkDelete(false);
 

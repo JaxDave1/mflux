@@ -470,6 +470,7 @@ class JobManager:
         self._stepwise_dirs: dict[str, Path] = {}
         self._download_results: dict[str, dict[str, Any]] = {}
         self._events: dict[str, list[tuple[str, dict]]] = {}
+        self._pending_cancel: set[str] = set()
         self._worker = threading.Thread(target=self._worker_loop, name="mflux-job-manager", daemon=True)
         self._worker.start()
 
@@ -479,6 +480,59 @@ class JobManager:
     def active_count(self) -> int:
         with self._lock:
             return sum(1 for job in self._jobs.values() if job.state in {"queued", "running"})
+
+    def inference_memory_gb(self) -> float:
+        with self._lock:
+            total_kb = 0
+            for process in self._processes.values():
+                if process.poll() is not None:
+                    continue
+                try:
+                    rss = subprocess.check_output(
+                        ["ps", "-o", "rss=", "-p", str(process.pid)],
+                        text=True,
+                        stderr=subprocess.DEVNULL,
+                    ).strip()
+                    if rss:
+                        total_kb += int(rss)
+                except Exception:
+                    continue
+        return round(total_kb / 1024 / 1024, 1)
+
+    def runtime_metrics(self) -> dict[str, Any]:
+        with self._lock:
+            active_jobs = [job for job in self._jobs.values() if job.state in {"queued", "running"}]
+            neural_load = 0
+            running_model: str | None = None
+            running_quantize: str | None = None
+
+            for job in active_jobs:
+                if job.state == "queued":
+                    neural_load = max(neural_load, 3)
+                    continue
+
+                progress = job.progress
+                if progress.percent is not None:
+                    neural_load = max(neural_load, int(progress.percent))
+                elif progress.step is not None and progress.total_steps:
+                    neural_load = max(
+                        neural_load,
+                        int(round((progress.step / progress.total_steps) * 100)),
+                    )
+
+                model = job.params.get("model") or job.params.get("model_name")
+                if model:
+                    running_model = str(model)
+                quantize = job.params.get("quantize")
+                if quantize is not None:
+                    running_quantize = "off" if not quantize else f"q{quantize}"
+
+            return {
+                "active_jobs": len(active_jobs),
+                "neural_load": min(100, neural_load),
+                "running_model": running_model,
+                "running_quantize": running_quantize,
+            }
 
     def create_job(self, module: ModuleName, params: dict, temp_paths: list[str] | None = None) -> Job:
         with self._lock:
@@ -545,38 +599,53 @@ class JobManager:
             events = self._events.get(job_id, [])
             return events[index:], len(events)
 
+    def _terminate_process(self, process: subprocess.Popen[str]) -> None:
+        if process.poll() is not None:
+            return
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+            process.wait(timeout=2)
+        except (ProcessLookupError, PermissionError):
+            process.terminate()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                process.kill()
+            process.wait(timeout=5)
+
+    def _is_cancelled_locked(self, job_id: str) -> bool:
+        job = self._jobs.get(job_id)
+        return job_id in self._pending_cancel or (job is not None and job.state == "cancelled")
+
     def cancel_job(self, job_id: str) -> Job:
+        process: subprocess.Popen[str] | None = None
         with self._condition:
             job = self._jobs.get(job_id)
             if job is None:
                 raise KeyError(job_id)
             if job.state in TERMINAL_STATES:
                 raise RuntimeError(f"already_terminal:{job.state}")
+
+            self._pending_cancel.add(job_id)
             if job.state == "queued":
                 try:
                     self._queue.remove(job_id)
                 except ValueError:
                     pass
-                updated = job.model_copy(
-                    update={
-                        "state": "cancelled",
-                        "finished_at": _now(),
-                        "error": JobError(type="cancelled", message="Job cancelled before launch"),
-                    }
-                )
-                self._jobs[job_id] = updated
-                self._cleanup_partial_locked(job_id)
-                self._emit_locked(job_id, "state", {"state": "cancelled"})
-                self._emit_locked(job_id, "complete", {"job": updated.model_dump(mode="json")})
-                self._condition.notify_all()
-                return updated
 
             process = self._processes.get(job_id)
+            message = "Job cancelled before launch" if job.state == "queued" else "Job cancelled by user"
             updated = job.model_copy(
                 update={
                     "state": "cancelled",
                     "finished_at": _now(),
-                    "error": JobError(type="cancelled", message="Job cancelled by user", exit_code=None),
+                    "error": JobError(type="cancelled", message=message, exit_code=None),
                 }
             )
             self._jobs[job_id] = updated
@@ -585,17 +654,13 @@ class JobManager:
             self._emit_locked(job_id, "complete", {"job": updated.model_dump(mode="json")})
             self._condition.notify_all()
 
-        if process is not None and process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=5)
+        if process is not None:
+            self._terminate_process(process)
 
         with self._condition:
+            self._pending_cancel.discard(job_id)
             current = self._jobs[job_id]
-            if current.error and process is not None:
+            if current.error and process is not None and process.returncode is not None:
                 current = current.model_copy(
                     update={
                         "error": current.error.model_copy(update={"exit_code": process.returncode}),
@@ -614,8 +679,14 @@ class JobManager:
 
     def _run_job(self, job_id: str) -> None:
         with self._condition:
+            if self._is_cancelled_locked(job_id):
+                self._pending_cancel.discard(job_id)
+                return
             job = self._jobs.get(job_id)
             if job is None or job.state != "queued":
+                return
+            if self._is_cancelled_locked(job_id):
+                self._pending_cancel.discard(job_id)
                 return
             started = _now()
             job = job.model_copy(update={"state": "running", "started_at": started})
@@ -623,6 +694,11 @@ class JobManager:
             self._emit_locked(job_id, "state", {"state": "running"})
             self._emit_progress_locked(job_id)
             self._condition.notify_all()
+
+        with self._condition:
+            if self._is_cancelled_locked(job_id):
+                self._pending_cancel.discard(job_id)
+                return
 
         stderr_handle = tempfile.NamedTemporaryFile(delete=False, prefix=f"mflux_job_{job_id}_", suffix=".stderr.log")
         stderr_handle.close()
@@ -639,7 +715,11 @@ class JobManager:
                 bufsize=1,
                 start_new_session=True,
             )
-            with self._lock:
+            with self._condition:
+                if self._is_cancelled_locked(job_id):
+                    self._pending_cancel.discard(job_id)
+                    self._terminate_process(process)
+                    return
                 self._processes[job_id] = process
 
             stdout_thread = threading.Thread(target=self._read_stdout, args=(job_id, process), daemon=True)

@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [neural-interface-v0.3] - 2026-06-24
+
+### MFLUX Neural Interface v0.3
+
+**Dashboard runtime truth (9C)**
+- Live 2s polling for system status; MLX Runtime shows inference process RSS (not whole HF hub).
+- Model Disk Cache reports deduplicated MFLUX cached model footprint + count.
+- Dashboard shows running model, live job progress, disk path, and gallery output count.
+
+**Validation depth (9B)**
+- `validation_pass.py`: system status contract, CivitAI download E2E, `model_export` E2E hooks.
+- Default CivitAI validation LoRA version when env unset; optional post-verify cleanup.
+
+**UX & reliability**
+- Gallery delete keeps current page instead of jumping to page 1.
+- Job queue cancel: race-free pending cancel, process-group kill, JobPanel stale-state fix.
+- Cancel on module Live Output panels and Models download/export cards.
+- `PHASE_10` work order + `NEURAL_INTERFACE_RUNBOOK.md` ops guide.
+
+---
+
 ## [neural-interface-v0.2] - 2026-06-24
 
 ### MFLUX Neural Interface v0.2

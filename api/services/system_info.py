@@ -1,11 +1,11 @@
 import os
 import platform
 import subprocess
-import sys
 from pathlib import Path
 
 from api.schemas.requests import AppConfig
 from api.schemas.responses import LoadedModel, MemoryStat, NeuralEngineStatus, SystemStatus
+from api.services.model_cache import mflux_cached_disk_usage
 
 
 def _read_sysctl(key: str, fallback: str) -> str:
@@ -19,24 +19,29 @@ def _read_sysctl(key: str, fallback: str) -> str:
         return fallback
 
 
+def _parse_vm_pages(vm_stat: str, label: str) -> int:
+    for line in vm_stat.splitlines():
+        if label in line:
+            return int(line.split(":")[1].strip().strip("."))
+    return 0
+
+
 def _memory_stats() -> MemoryStat:
     total_bytes = int(_read_sysctl("hw.memsize", str(128 * 1024**3)))
     total_gb = round(total_bytes / 1024**3, 1)
     vm_stat = subprocess.check_output(["vm_stat"], text=True)
-    page_size = 4096
-    free_pages = 0
-    speculative_pages = 0
-    inactive_pages = 0
-    for line in vm_stat.splitlines():
-        if "Pages free" in line:
-            free_pages = int(line.split(":")[1].strip().strip("."))
-        if "Pages speculative" in line:
-            speculative_pages = int(line.split(":")[1].strip().strip("."))
-        if "Pages inactive" in line:
-            inactive_pages = int(line.split(":")[1].strip().strip("."))
-    free_gb = ((free_pages + speculative_pages + inactive_pages) * page_size) / 1024**3
-    used_gb = max(0.0, round(total_gb - free_gb, 1))
-    return MemoryStat(used=used_gb, total=total_gb, unit="GB")
+    page_size = int(_read_sysctl("hw.pagesize", "4096"))
+    wired_pages = _parse_vm_pages(vm_stat, "Pages wired down")
+    active_pages = _parse_vm_pages(vm_stat, "Pages active")
+    compressor_pages = _parse_vm_pages(vm_stat, "Pages occupied by compressor")
+    used_gb = round(((wired_pages + active_pages + compressor_pages) * page_size) / 1024**3, 1)
+    if used_gb <= 0:
+        free_pages = _parse_vm_pages(vm_stat, "Pages free")
+        speculative_pages = _parse_vm_pages(vm_stat, "Pages speculative")
+        inactive_pages = _parse_vm_pages(vm_stat, "Pages inactive")
+        free_gb = ((free_pages + speculative_pages + inactive_pages) * page_size) / 1024**3
+        used_gb = max(0.0, round(total_gb - free_gb, 1))
+    return MemoryStat(used=min(used_gb, total_gb), total=total_gb, unit="GB")
 
 
 def _resolve_path(value: str) -> Path:
@@ -79,47 +84,13 @@ def _nearest_existing_path(path: Path) -> Path:
     return current
 
 
-def _directory_size(path: Path) -> int:
-    if not path.exists():
-        return 0
-    total = 0
-    for candidate in path.rglob("*"):
-        if candidate.is_symlink():
-            continue
-        if candidate.is_file():
-            try:
-                total += candidate.stat().st_size
-            except OSError:
-                continue
-    return total
+def _mlx_runtime_stats(memory_total_gb: float, inference_gb: float) -> MemoryStat:
+    return MemoryStat(used=inference_gb, total=memory_total_gb, unit="GB")
 
 
-def _default_mflux_cache_dir() -> Path:
-    if os.environ.get("MFLUX_CACHE_DIR"):
-        return Path(os.environ["MFLUX_CACHE_DIR"]).expanduser()
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Caches" / "mflux"
-    return Path.home() / ".cache" / "mflux"
-
-
-def _hf_hub_cache(config_hf_home: str) -> Path:
-    if os.environ.get("HUGGINGFACE_HUB_CACHE"):
-        return Path(os.environ["HUGGINGFACE_HUB_CACHE"]).expanduser()
-    if os.environ.get("HF_HOME"):
-        return Path(os.environ["HF_HOME"]).expanduser() / "hub"
-    resolved = Path(config_hf_home).expanduser()
-    if resolved.name == "hub":
-        return resolved
-    return resolved / "hub"
-
-
-def _mlx_cache_stats(config: AppConfig) -> MemoryStat:
-    hf_root = _hf_hub_cache(config.paths.hfHome)
-    mflux_root = _default_mflux_cache_dir()
-    used_bytes = _directory_size(hf_root) + _directory_size(mflux_root)
-    used_gb = round(used_bytes / 1024**3, 1)
-    total_gb = float(config.system.cacheLimit)
-    return MemoryStat(used=used_gb, total=total_gb, unit="GB")
+def _model_disk_cache_stats(config: AppConfig) -> tuple[MemoryStat, int]:
+    used_gb, cached_count = mflux_cached_disk_usage(config)
+    return MemoryStat(used=used_gb, total=used_gb, unit="GB"), cached_count
 
 
 def _loaded_model(config: AppConfig) -> LoadedModel:
@@ -152,18 +123,37 @@ def _disk_stats(config: AppConfig) -> tuple[MemoryStat, str]:
     return MemoryStat(used=used_gb, total=total_gb, unit="GB"), str(best_path)
 
 
-def get_system_status(config: AppConfig, *, active_jobs: int = 0) -> SystemStatus:
+def get_system_status(
+    config: AppConfig,
+    *,
+    active_jobs: int = 0,
+    neural_load: int = 0,
+    running_model: str | None = None,
+    running_quantize: str | None = None,
+    inference_memory_gb: float = 0.0,
+) -> SystemStatus:
     memory = _memory_stats()
     disk, disk_path = _disk_stats(config)
-    neural_load = min(95, active_jobs * 35) if active_jobs > 0 else 0
+    model_disk_cache, cached_model_count = _model_disk_cache_stats(config)
+    if running_model:
+        loaded_model = LoadedModel(
+            name=running_model,
+            quantize=running_quantize or _loaded_model(config).quantize,
+        )
+    else:
+        loaded_model = _loaded_model(config)
+
+    engine_status = "MPS_ACTIVE" if active_jobs > 0 else "MPS_IDLE"
     return SystemStatus(
         platform=_read_sysctl("machdep.cpu.brand_string", platform.processor() or "Apple Silicon"),
         memory=memory,
-        mlxCache=_mlx_cache_stats(config),
+        mlxCache=_mlx_runtime_stats(memory.total, inference_memory_gb),
+        modelDiskCache=model_disk_cache,
+        cachedModelCount=cached_model_count,
         diskSpace=disk,
         diskPath=disk_path,
-        neuralEngine=NeuralEngineStatus(active=True, load=neural_load, status="MPS_ACTIVE"),
+        neuralEngine=NeuralEngineStatus(active=True, load=neural_load, status=engine_status),
         temperature=42,
         activeJobs=active_jobs,
-        loadedModel=_loaded_model(config),
+        loadedModel=loaded_model,
     )

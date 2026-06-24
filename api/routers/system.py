@@ -41,8 +41,15 @@ def health() -> ApiEnvelope[HealthResponse]:
 
 @router.get("/system/status")
 def system_status() -> ApiEnvelope[SystemStatus]:
-    active_jobs = job_manager.active_count()
-    status = get_system_status(store.load(), active_jobs=active_jobs)
+    runtime = job_manager.runtime_metrics()
+    status = get_system_status(
+        store.load(),
+        active_jobs=runtime["active_jobs"],
+        neural_load=runtime["neural_load"],
+        running_model=runtime["running_model"],
+        running_quantize=runtime["running_quantize"],
+        inference_memory_gb=job_manager.inference_memory_gb(),
+    )
     return ApiEnvelope(ok=True, data=status)
 
 

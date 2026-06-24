@@ -46,6 +46,8 @@ class SystemStatus(BaseModel):
     platform: str
     memory: MemoryStat
     mlxCache: MemoryStat
+    modelDiskCache: MemoryStat
+    cachedModelCount: int = 0
     diskSpace: MemoryStat
     diskPath: str | None = None
     neuralEngine: NeuralEngineStatus

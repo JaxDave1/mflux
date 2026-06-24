@@ -27,6 +27,7 @@ function ModelCard({
   onCopyTrigger,
   onDownload,
   onExport,
+  onCancelJob,
   onDeleteCache,
   deletingCache
 }: {
@@ -37,6 +38,7 @@ function ModelCard({
   onCopyTrigger: (word: string) => void;
   onDownload: (id: string) => void;
   onExport: (id: string) => void;
+  onCancelJob: (jobId: string) => void;
   onDeleteCache: (id: string) => void;
   deletingCache: boolean;
 }) {
@@ -156,9 +158,25 @@ function ModelCard({
         </div>
       ) : null}
       {exporting ? (
-        <div className="text-xs text-on-surface-variant">
-          Quantized export running. Progress updates in the job panel; this can take several minutes.
+        <div className="space-y-2">
+          <div className="text-xs text-on-surface-variant">
+            Quantized export running. This can take several minutes.
+          </div>
+          {exportJob ? (
+            <GenerateButton
+              onClick={() => onCancelJob(exportJob.id)}
+              label="CANCEL EXPORT"
+              variant="ghost"
+            />
+          ) : null}
         </div>
+      ) : null}
+      {downloading && downloadJob ? (
+        <GenerateButton
+          onClick={() => onCancelJob(downloadJob.id)}
+          label="CANCEL DOWNLOAD"
+          variant="ghost"
+        />
       ) : null}
       {model.source === "builtin" && !cached && model.metadata.downloadable ? (
         <div title={hfTokenSet ? undefined : tokenMessage}>
@@ -214,6 +232,7 @@ export function Models() {
   const [exportQuantize, setExportQuantize] = useState<QuantizeSelection>("8");
   const jobs = useJobStore((state) => state.jobs);
   const submitJob = useJobStore((state) => state.submitJob);
+  const cancelJob = useJobStore((state) => state.cancelJob);
   const connectJob = useJobStore((state) => state.connectJob);
   const { config, loadConfig } = useConfigStore();
 
@@ -367,6 +386,21 @@ export function Models() {
       });
     return map;
   }, [jobs]);
+
+  const onCancelJob = async (jobId: string) => {
+    setError(null);
+    try {
+      await cancelJob(jobId);
+      setNotice("Job cancelled.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel job");
+    }
+  };
+
+  const activeCivitaiJob = jobs.find(
+    (job) =>
+      job.module === "civitai_download" && !["succeeded", "failed", "cancelled", "timed_out"].includes(job.state)
+  );
 
   const onDeleteCache = (id: string) => {
     setPendingCacheDeleteId(id);
@@ -557,6 +591,7 @@ export function Models() {
                 onCopyTrigger={(word) => void onCopyTrigger(word)}
                 onDownload={(id) => void onDownload(id)}
                 onExport={(id) => void onExport(id)}
+                onCancelJob={(jobId) => void onCancelJob(jobId)}
                 onDeleteCache={onDeleteCache}
                 deletingCache={deletingCacheId === model.id}
               />
@@ -632,6 +667,13 @@ export function Models() {
                   </div>
                 ) : null}
               </div>
+              {activeCivitaiJob ? (
+                <GenerateButton
+                  onClick={() => void onCancelJob(activeCivitaiJob.id)}
+                  label="CANCEL CIVITAI DOWNLOAD"
+                  variant="ghost"
+                />
+              ) : null}
             </Panel>
           ) : null}
           <Panel title="DISCOVERY RULES" neonBorder="secondary" variant="composite" className="space-y-4">
