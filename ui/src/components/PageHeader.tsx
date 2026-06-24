@@ -10,22 +10,21 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={`mb-8 flex items-end justify-between gap-4 ${className}`}>
+    <header className={`module-reskin-page-header mb-8 flex items-end justify-between gap-4 ${className}`}>
       <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">
+        <h1 className="titanium-text font-headline text-[32px] font-semibold uppercase tracking-[0.04em]">
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 font-label text-xs tracking-[0.18em] text-on-surface-variant">
-            {description}
-          </p>
+          <p className="mt-1 font-body text-sm text-[var(--color-text-secondary)]">{description}</p>
         ) : null}
       </div>
       {version ? (
-        <div className="rounded-full border border-secondary/40 px-3 py-1 font-label text-[10px] tracking-[0.18em] text-secondary">
+        <div className="status-pill">
+          <span className="status-pill-dot" />
           {version}
         </div>
       ) : null}
-    </div>
+    </header>
   );
 }

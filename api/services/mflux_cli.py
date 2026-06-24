@@ -5,6 +5,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 from uuid import uuid4
 
 from api.schemas.requests import (
@@ -57,6 +58,25 @@ def _generic_output_path(config: AppConfig, output: str | None, stem: str, suffi
     return base / f"{stem}_{stamp}{suffix}"
 
 
+def _thumbnail_path(path: Path) -> str:
+    return f"/api/gallery/file?path={quote(str(path))}"
+
+
+FLUX2_DISTILLED_NO_GUIDANCE = frozenset({"flux2-klein-4b", "flux2-klein-9b"})
+
+
+def _append_guidance_args(args: list[str], model: str, guidance: float | None) -> None:
+    if model in FLUX2_DISTILLED_NO_GUIDANCE:
+        return
+    if guidance is not None:
+        args += ["--guidance", str(guidance)]
+
+
+def _append_stepwise_args(args: list[str], stepwise_output_dir: str | None) -> None:
+    if stepwise_output_dir:
+        args += ["--stepwise-image-output-dir", stepwise_output_dir]
+
+
 def _txt2img_command(request: Txt2ImgRequest, output: Path) -> CommandSpec:
     script_map = {
         "dev": "mflux.models.flux.cli.flux_generate",
@@ -87,21 +107,28 @@ def _txt2img_command(request: Txt2ImgRequest, output: Path) -> CommandSpec:
         str(request.height),
         "--steps",
         str(request.steps),
-        "--guidance",
-        str(request.guidance),
         "--scheduler",
         request.scheduler,
         "--output",
         str(output)
     ]
+    _append_guidance_args(args, request.model, request.guidance)
     if request.quantize is not None:
         args += ["--quantize", str(request.quantize)]
-    if request.seed is not None:
+    if request.autoSeeds is not None:
+        args += ["--auto-seeds", str(request.autoSeeds)]
+    elif isinstance(request.seed, list):
+        if request.seed:
+            args += ["--seed", *[str(seed) for seed in request.seed]]
+    elif request.seed is not None:
         args += ["--seed", str(request.seed)]
     if request.metadata:
         args.append("--metadata")
-    for lora in request.loraPaths:
-        args += ["--lora-paths", lora]
+    if request.lowRam:
+        args.append("--low-ram")
+    _append_stepwise_args(args, request.stepwiseOutputDir)
+    if request.loraPaths:
+        args += ["--lora-paths", *request.loraPaths]
     if request.loraScales:
         args += ["--lora-scales", *[str(scale) for scale in request.loraScales]]
     return CommandSpec(module=module, args=args)
@@ -137,13 +164,12 @@ def _img2img_command(request: Img2ImgRequest, output: Path) -> CommandSpec:
         str(request.height),
         "--steps",
         str(request.steps),
-        "--guidance",
-        str(request.guidance),
         "--scheduler",
         request.scheduler,
         "--output",
         str(output),
     ]
+    _append_guidance_args(args, request.model, request.guidance)
     if module == "mflux.models.qwen.cli.qwen_image_edit_generate":
         args += ["--image-paths", str(_resolve_path(request.imagePath))]
     else:
@@ -159,6 +185,7 @@ def _img2img_command(request: Img2ImgRequest, output: Path) -> CommandSpec:
         args += ["--seed", str(request.seed)]
     if request.metadata:
         args.append("--metadata")
+    _append_stepwise_args(args, request.stepwiseOutputDir)
     for lora in request.loraPaths:
         args += ["--lora-paths", lora]
     if request.loraScales:
@@ -195,6 +222,7 @@ def _inpaint_command(request: InpaintRequest, output: Path) -> CommandSpec:
         args += ["--seed", str(request.seed)]
     if request.metadata:
         args.append("--metadata")
+    _append_stepwise_args(args, request.stepwiseOutputDir)
     for lora in request.loraPaths:
         args += ["--lora-paths", lora]
     if request.loraScales:
@@ -229,6 +257,7 @@ def _kontext_command(request: KontextRequest, output: Path) -> CommandSpec:
         args += ["--seed", str(request.seed)]
     if request.metadata:
         args.append("--metadata")
+    _append_stepwise_args(args, request.stepwiseOutputDir)
     for lora in request.loraPaths:
         args += ["--lora-paths", lora]
     if request.loraScales:
@@ -267,6 +296,7 @@ def _controlnet_command(request: ControlNetRequest, output: Path) -> CommandSpec
         args.append("--metadata")
     if request.controlnetSaveCanny:
         args.append("--controlnet-save-canny")
+    _append_stepwise_args(args, request.stepwiseOutputDir)
     for lora in request.loraPaths:
         args += ["--lora-paths", lora]
     if request.loraScales:
@@ -297,10 +327,12 @@ def _upscaler_command(request: UpscalerRequest, output: Path) -> CommandSpec:
     return CommandSpec(module="mflux.models.seedvr2.cli.seedvr2_upscale", args=args)
 
 
-def _depth_pro_command(request: DepthProRequest) -> CommandSpec:
+def _depth_pro_command(request: DepthProRequest, output: Path | None = None) -> CommandSpec:
     args = ["--image-path", str(_resolve_path(request.imagePath))]
     if request.quantize is not None:
         args += ["--quantize", str(request.quantize)]
+    if output is not None:
+        args += ["--output", str(output)]
     return CommandSpec(module="mflux.models.depth_pro.cli.save_depth", args=args)
 
 
@@ -338,7 +370,7 @@ def run_txt2img(request: Txt2ImgRequest, config: AppConfig) -> Txt2ImgResponse:
     output_item = GenerationOutput(
         id=job.id,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=request.prompt,
         negativePrompt=request.negativePrompt,
         model=request.model,
@@ -377,7 +409,7 @@ def run_img2img(request: Img2ImgRequest, config: AppConfig) -> Txt2ImgResponse:
     output_item = GenerationOutput(
         id=uuid4().hex,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=request.prompt,
         negativePrompt=request.negativePrompt,
         model=request.model,
@@ -416,7 +448,7 @@ def run_inpaint(request: InpaintRequest, config: AppConfig) -> Txt2ImgResponse:
     output_item = GenerationOutput(
         id=uuid4().hex,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=request.prompt,
         model=request.model,
         seed=request.seed or 0,
@@ -452,7 +484,7 @@ def run_kontext(request: KontextRequest, config: AppConfig) -> Txt2ImgResponse:
     output_item = GenerationOutput(
         id=uuid4().hex,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=request.prompt,
         model=request.model,
         seed=request.seed or 0,
@@ -488,7 +520,7 @@ def run_controlnet(request: ControlNetRequest, config: AppConfig) -> Txt2ImgResp
     output_item = GenerationOutput(
         id=uuid4().hex,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=request.prompt,
         model=request.model,
         seed=request.seed or 0,
@@ -525,7 +557,7 @@ def run_upscaler(request: UpscalerRequest, config: AppConfig) -> SingleOutputRes
     result = GenerationOutput(
         id=uuid4().hex,
         path=str(output),
-        thumbnailPath=str(output),
+        thumbnailPath=_thumbnail_path(output),
         prompt=f"Upscale {input_path.name}",
         model=request.model,
         seed=request.seed or 0,
@@ -545,7 +577,8 @@ def run_upscaler(request: UpscalerRequest, config: AppConfig) -> SingleOutputRes
 
 def run_depth_pro(request: DepthProRequest, config: AppConfig) -> SingleOutputResponse:
     input_path = _resolve_path(request.imagePath)
-    command = _depth_pro_command(request)
+    final_output = _generic_output_path(config, request.output, f"{input_path.stem}_depth")
+    command = _depth_pro_command(request, final_output)
     full_command = [sys.executable, "-m", command.module, *command.args]
     started = datetime.utcnow()
     process = subprocess.run(
@@ -558,17 +591,17 @@ def run_depth_pro(request: DepthProRequest, config: AppConfig) -> SingleOutputRe
     )
     if process.returncode != 0:
         raise RuntimeError(process.stderr.strip() or process.stdout.strip() or "Depth Pro command failed")
-    generated_path = input_path.with_stem(f"{input_path.stem}_depth").with_suffix(".png")
-    final_output = _generic_output_path(config, request.output, f"{input_path.stem}_depth")
-    final_output.parent.mkdir(parents=True, exist_ok=True)
-    if generated_path.exists() and generated_path.resolve() != final_output.resolve():
-        shutil.move(str(generated_path), str(final_output))
-    else:
-        final_output = generated_path
+    if not final_output.exists():
+        generated_path = input_path.with_stem(f"{input_path.stem}_depth").with_suffix(".png")
+        if generated_path.exists() and generated_path.resolve() != final_output.resolve():
+            final_output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(generated_path), str(final_output))
+        elif generated_path.exists():
+            final_output = generated_path
     result = GenerationOutput(
         id=uuid4().hex,
         path=str(final_output),
-        thumbnailPath=str(final_output),
+        thumbnailPath=_thumbnail_path(final_output),
         prompt=f"Depth map for {input_path.name}",
         model="depth-pro",
         seed=0,

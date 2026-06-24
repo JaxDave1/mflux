@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import { Panel } from "./Panel";
 
 export function StatCard({
@@ -14,13 +15,9 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Panel
-      className={`transition hover:scale-[1.02] hover:shadow-glow-secondary ${className}`}
-      scanline
-      neonBorder="secondary"
-    >
+    <Panel className={`transition duration-150 ${className}`} scanline neonBorder="secondary">
       <div className="mb-2 flex items-center gap-3">
-        <span className="material-symbols-outlined text-secondary">{icon}</span>
+        <Icon className="text-secondary" name={icon} />
         <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
           {label}
         </span>

@@ -1,20 +1,43 @@
+import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from api.schemas.responses import ApiEnvelope, ApiError, CacheRoots, ModelMetadata, ModelsResponse, ModelSummary
+from api.schemas.responses import (
+    ApiEnvelope,
+    ApiError,
+    CacheDeleteResponse,
+    CacheRoots,
+    LoraSummary,
+    LorasResponse,
+    ModelDefaultsResponse,
+    ModelMetadata,
+    ModelsResponse,
+    ModelSummary,
+    ModuleDefaultsResponse,
+)
 from api.services.config_store import ConfigStore
+from api.services.lora_compat import (
+    detect_lora_architecture,
+    extract_trigger_words,
+    lora_compatibility,
+    safetensors_metadata,
+)
+from api.services.model_defaults import model_defaults, module_defaults
 from api.services.mflux_cli import _resolve_path
 
 router = APIRouter(prefix="/api", tags=["models"])
 store = ConfigStore()
 
 WEIGHT_SUFFIXES = {".safetensors", ".ckpt", ".pt", ".pth", ".gguf", ".bin"}
+EXPORT_UNSUPPORTED_TYPES = frozenset({"upscaler", "depth"})
 BUILTIN_MODELS: list[dict[str, Any]] = [
     {"id": "dev", "name": "FLUX.1 Dev", "type": "checkpoint", "architecture": "FLUX.1", "size": "12B", "repoId": "black-forest-labs/FLUX.1-dev", "notes": "Primary FLUX.1 quality model."},
     {"id": "schnell", "name": "FLUX.1 Schnell", "type": "checkpoint", "architecture": "FLUX.1", "size": "12B", "repoId": "black-forest-labs/FLUX.1-schnell", "notes": "Fast distilled FLUX.1 generation path."},
@@ -68,8 +91,20 @@ def _hf_hub_cache(config_hf_home: str) -> Path:
     return resolved / "hub"
 
 
+def _repo_cache_dir(repo_id: str, hf_cache_root: Path) -> Path:
+    return hf_cache_root / f"models--{repo_id.replace('/', '--')}"
+
+
 def _repo_snapshot_dir(repo_id: str, hf_cache_root: Path) -> Path:
-    return hf_cache_root / f"models--{repo_id.replace('/', '--')}" / "snapshots"
+    return _repo_cache_dir(repo_id, hf_cache_root) / "snapshots"
+
+
+def _is_within_root(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
 
 
 def _repo_cached(repo_id: str, hf_cache_root: Path) -> bool:
@@ -138,26 +173,65 @@ def _scan_custom_models(root: Path, active_model: str) -> list[ModelSummary]:
 
 def _scan_loras(root: Path) -> list[ModelSummary]:
     files = sorted(path for path in root.rglob("*.safetensors")) if root.exists() else []
-    return [
-        ModelSummary(
-            id=f"lora-{path.stem.lower().replace(' ', '-')}",
-            name=path.stem.replace("_", " ").replace("-", " ").title(),
-            type="lora",
-            architecture="LoRA",
-            size=_format_size(path.stat().st_size),
-            path=str(path),
-            active=False,
-            source="lora",
-            repoId=None,
-            metadata=ModelMetadata(
-                notes="Detected local LoRA asset.",
-                installed=True,
-                detectedFiles=1,
-                cached=True,
-            ),
+    models: list[ModelSummary] = []
+    for path in files:
+        metadata = safetensors_metadata(path)
+        lora_architecture = detect_lora_architecture(path, metadata)
+        models.append(
+            ModelSummary(
+                id=f"lora-{path.stem.lower().replace(' ', '-')}",
+                name=path.stem.replace("_", " ").replace("-", " ").title(),
+                type="lora",
+                architecture=lora_architecture,
+                size=_format_size(path.stat().st_size),
+                path=str(path),
+                active=False,
+                source="lora",
+                repoId=None,
+                metadata=ModelMetadata(
+                    notes="Detected local LoRA asset.",
+                    installed=True,
+                    detectedFiles=1,
+                    cached=True,
+                    triggerWords=extract_trigger_words(metadata) or [],
+                    loraArchitecture=lora_architecture,
+                ),
+            )
         )
-        for path in files
-    ]
+    return models
+
+
+def _lora_root() -> Path:
+    config = store.load()
+    configured = _resolve_path(config.paths.loraDir) if config.paths.loraDir else None
+    env_root = Path(os.environ["LORA_LIBRARY_PATH"]).expanduser() if os.environ.get("LORA_LIBRARY_PATH") else None
+    fallback = _default_mflux_cache_dir() / "loras"
+    for root in (configured, env_root, fallback):
+        if root is not None and root.exists():
+            return root
+    return configured or env_root or fallback
+
+
+def _scan_lora_summaries(root: Path, compatible_with: str | None = None) -> list[LoraSummary]:
+    files = sorted(path for path in root.rglob("*.safetensors")) if root.exists() else []
+    summaries: list[LoraSummary] = []
+    for path in files:
+        metadata = safetensors_metadata(path)
+        lora_architecture = detect_lora_architecture(path, metadata)
+        compat = lora_compatibility(lora_architecture, compatible_with) if compatible_with else "unknown"
+        if compat == "incompatible":
+            continue
+        summaries.append(
+            LoraSummary(
+                path=str(path),
+                name=path.stem.replace("_", " ").replace("-", " ").title(),
+                trigger_words=extract_trigger_words(metadata),
+                size_mb=round(path.stat().st_size / (1024 * 1024), 1),
+                architecture=lora_architecture,
+                compat=compat,
+            )
+        )
+    return summaries
 
 
 def _builtin_models(active_model: str, hf_cache_root: Path, mflux_cache_root: Path, default_quantize: int) -> list[ModelSummary]:
@@ -185,6 +259,7 @@ def _builtin_models(active_model: str, hf_cache_root: Path, mflux_cache_root: Pa
                     detectedFiles=1 if cached else 0,
                     cached=cached,
                     downloadable=True,
+                    exportable=item["type"] not in EXPORT_UNSUPPORTED_TYPES and item["id"] != "depth-pro",
                     triggerWords=item.get("triggerWords", []),
                     precision=f"q{default_quantize}" if active_model == item["id"] else None,
                 ),
@@ -220,6 +295,39 @@ def _resolve_model_state() -> ModelsResponse:
 @router.get("/models")
 def list_models() -> ApiEnvelope[ModelsResponse]:
     return ApiEnvelope(ok=True, data=_resolve_model_state())
+
+
+@router.get("/models/loras")
+def list_loras(compatible_with: str | None = None) -> ApiEnvelope[LorasResponse]:
+    return ApiEnvelope(ok=True, data=LorasResponse(loras=_scan_lora_summaries(_lora_root(), compatible_with)))
+
+
+@router.get("/models/{name}/defaults")
+def get_model_defaults(name: str):
+    defaults = model_defaults(name)
+    if defaults is None:
+        return JSONResponse(
+            status_code=404,
+            content=ApiEnvelope[dict](
+                ok=False,
+                error=ApiError(code="UNKNOWN_MODEL", message="Unknown model defaults", details=name),
+            ).model_dump(mode="json"),
+        )
+    return ApiEnvelope(ok=True, data=ModelDefaultsResponse(**defaults))
+
+
+@router.get("/modules/{module}/defaults")
+def get_module_defaults(module: str):
+    defaults = module_defaults(module)
+    if defaults is None:
+        return JSONResponse(
+            status_code=404,
+            content=ApiEnvelope[dict](
+                ok=False,
+                error=ApiError(code="UNKNOWN_MODULE", message="Unknown module defaults", details=module),
+            ).model_dump(mode="json"),
+        )
+    return ApiEnvelope(ok=True, data=ModuleDefaultsResponse(**defaults))
 
 
 @router.post("/models/cache")
@@ -261,3 +369,39 @@ def cache_model(request: CacheRequest) -> ApiEnvelope[dict[str, str]]:
         )
 
     return ApiEnvelope(ok=True, data={"status": "cached", "id": request.id})
+
+
+@router.delete("/models/cache/{model_id}")
+def delete_cached_model(model_id: str) -> ApiEnvelope[CacheDeleteResponse]:
+    target = next((item for item in BUILTIN_MODELS if item["id"] == model_id), None)
+    if target is None:
+        return ApiEnvelope(ok=False, error=ApiError(code="UNKNOWN_MODEL", message="Unknown builtin model"))
+
+    config = store.load()
+    hf_cache_root = _hf_hub_cache(config.paths.hfHome)
+    mflux_cache_root = _default_mflux_cache_dir()
+    deleted_paths: list[str] = []
+
+    if model_id == "depth-pro":
+        cache_dir = mflux_cache_root / "depth_pro"
+        if not _is_within_root(cache_dir, mflux_cache_root):
+            return ApiEnvelope(ok=False, error=ApiError(code="PATH_SAFETY", message="Refusing to delete path outside MFLUX cache root"))
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
+            deleted_paths.append(str(cache_dir))
+    else:
+        repo_ids = [repo_id for repo_id in [target.get("repoId"), *(target.get("extraRepoIds") or [])] if repo_id]
+        if not repo_ids:
+            return ApiEnvelope(
+                ok=False,
+                error=ApiError(code="CACHE_UNSUPPORTED", message="This model family does not use a removable Hugging Face cache entry."),
+            )
+        for repo_id in repo_ids:
+            repo_dir = _repo_cache_dir(repo_id, hf_cache_root)
+            if not _is_within_root(repo_dir, hf_cache_root):
+                return ApiEnvelope(ok=False, error=ApiError(code="PATH_SAFETY", message="Refusing to delete path outside Hugging Face cache root"))
+            if repo_dir.exists():
+                shutil.rmtree(repo_dir)
+                deleted_paths.append(str(repo_dir))
+
+    return ApiEnvelope(ok=True, data=CacheDeleteResponse(id=model_id, deleted_paths=deleted_paths))

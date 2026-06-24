@@ -1,31 +1,3 @@
-export const txt2imgModelOptions = [
-  { value: "dev", label: "FLUX.1-dev" },
-  { value: "schnell", label: "FLUX.1-schnell" },
-  { value: "z-image-turbo", label: "Z-Image Turbo" },
-  { value: "qwen-image", label: "Qwen Image" },
-  { value: "fibo", label: "FIBO" }
-];
-
-export const img2imgModelOptions = [
-  { value: "dev", label: "FLUX.1-dev" },
-  { value: "schnell", label: "FLUX.1-schnell" },
-  { value: "z-image-turbo", label: "Z-Image Turbo" },
-  { value: "qwen-image-edit", label: "Qwen Image Edit" },
-  { value: "fibo", label: "FIBO" }
-];
-
-export const inpaintModelOptions = [
-  { value: "dev-fill", label: "FLUX.1 Fill Dev" }
-];
-
-export const kontextModelOptions = [
-  { value: "dev-kontext", label: "FLUX.1 Kontext Dev" }
-];
-
-export const schedulerOptions = [
-  { value: "linear", label: "Linear" }
-];
-
 export const modulePanels = {
   img2img: {
     title: "IMG2IMG",
@@ -33,7 +5,7 @@ export const modulePanels = {
     sections: [
       "Source image intake",
       "Denoise strength",
-      "Prompt and negative prompt",
+      "Prompt",
       "Output resolution and seeds"
     ]
   },

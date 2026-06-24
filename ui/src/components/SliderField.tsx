@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export function SliderField({
   label,
   value,
@@ -19,6 +21,8 @@ export function SliderField({
   color?: "primary" | "secondary";
   className?: string;
 }) {
+  const percent = ((value - min) / (max - min)) * 100;
+
   return (
     <label className={`flex flex-col gap-2 ${className}`}>
       <div className="flex items-center justify-between">
@@ -37,7 +41,11 @@ export function SliderField({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="accent-secondary"
+        style={
+          { "--slider-percent": `${Math.max(0, Math.min(100, percent))}%` } as CSSProperties &
+            Record<"--slider-percent", string>
+        }
+        className="mflux-slider accent-secondary"
       />
     </label>
   );

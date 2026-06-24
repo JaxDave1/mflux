@@ -1,26 +1,34 @@
 import { useState } from "react";
-import { GenerateButton, PageHeader, Panel, ToggleChip } from "../components";
-import { api } from "../lib/api";
-import type { GenerationOutput } from "../lib/types";
+import { useSearchParams } from "react-router-dom";
+import { GenerateButton, ImageInput, ModuleRunColumn, PageHeader, Panel, QuantizeField } from "../components";
+import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
+import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
+import { useJobStore } from "../stores/useJobStore";
 
 export function DepthPro() {
-  const [imagePath, setImagePath] = useState("");
-  const [quantize, setQuantize] = useState("8");
+  const [searchParams] = useSearchParams();
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
   const [output, setOutput] = useState("");
-  const [result, setResult] = useState<GenerationOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const submitJob = useJobStore((state) => state.submitJob);
+  const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("depth_pro");
 
   const runDepth = async () => {
+    if (!imagePath) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await api.depthProRun({
-        imagePath,
-        quantize: Number(quantize),
-        output: output || null
+      await submitJob({
+        module: "depth_pro",
+        params: {
+          imagePath,
+          quantize: quantizeApiValue(quantize),
+          output: output || null
+        }
       });
-      setResult(response.output);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Depth Pro failed");
     } finally {
@@ -28,22 +36,25 @@ export function DepthPro() {
     }
   };
 
+  const headerStatus = useModuleHeaderStatus(activeJobs, latestJob);
+
   return (
-    <div className="content-shell">
-      <PageHeader title="DEPTH PRO" description="Apple monocular depth extraction and export." />
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="DEPTH EXTRACTION" neonBorder="primary" className="space-y-4">
-          <label className="flex flex-col gap-2">
-            <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-              IMAGE PATH
-            </span>
-            <input
-              value={imagePath}
-              onChange={(event) => setImagePath(event.target.value)}
-              placeholder="./input.png"
-              className="rounded-panel border border-outline-variant/60 bg-surface-container px-3 py-3 text-sm outline-none transition focus:border-secondary/60"
-            />
-          </label>
+    <div className="content-shell module-reskin-page module-reskin-page--generation">
+      <PageHeader
+        title="DEPTH PRO"
+        description="Apple monocular depth extraction and export."
+        version={headerStatus}
+        className="module-reskin-page-header"
+      />
+      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
+        <div className="module-form-column space-y-6">
+          <Panel title="DEPTH EXTRACTION" neonBorder="primary" scanline className="space-y-4">
+          <ImageInput
+            defaultPath={searchParams.get("ref") ?? undefined}
+            label="Source Image"
+            onChange={setImagePath}
+            value={imagePath}
+          />
           <label className="flex flex-col gap-2">
             <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
               OUTPUT PATH
@@ -55,46 +66,35 @@ export function DepthPro() {
               className="rounded-panel border border-outline-variant/60 bg-surface-container px-3 py-3 text-sm outline-none transition focus:border-secondary/60"
             />
           </label>
-          <div>
-            <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-              QUANTIZE
-            </div>
-            <ToggleChip options={["3", "4", "5", "6", "8"]} value={quantize} onChange={setQuantize} />
-          </div>
-        </Panel>
-        <Panel title="RUN CONTROL" neonBorder="secondary" className="space-y-4">
-          <div className="text-sm text-on-surface-variant">
-            Uses the audited `mflux-save-depth` flow and writes a PNG depth map to the configured output path.
-          </div>
-          <GenerateButton
-            onClick={runDepth}
-            loading={loading}
-            disabled={!imagePath.trim()}
-            label="RUN DEPTH MAP"
-          />
-          {error ? (
-            <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">
-              {error}
-            </div>
-          ) : null}
-        </Panel>
-      </div>
-      <div className="mt-6">
-        <Panel title="LATEST DEPTH OUTPUT">
-          {result ? (
-            <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-              <img src={result.thumbnailPath ?? result.path} alt={result.prompt} className="aspect-square w-full rounded-panel object-cover" />
-              <div className="space-y-3">
-                <div className="font-headline text-xl font-bold text-on-surface">Depth map complete</div>
-                <div className="text-sm text-on-surface-variant">{result.path}</div>
+          <QuantizeField value={quantize} onChange={setQuantize} />
+          </Panel>
+        </div>
+        <ModuleRunColumn
+          job={latestJob}
+          stepwiseImages={stepwiseImages}
+          runControl={
+            <>
+              <div className="font-body text-sm text-[var(--color-text-secondary)]">
+                Generates a PNG depth map from the selected image and saves it to the configured output path.
               </div>
-            </div>
-          ) : (
-            <div className="text-sm text-on-surface-variant">
-              No depth map has been generated yet.
-            </div>
-          )}
-        </Panel>
+              <GenerateButton
+                onClick={runDepth}
+                loading={loading}
+                disabled={!imagePath}
+                label="RUN DEPTH MAP"
+                className="module-primary-action w-full"
+              />
+              <div className="font-body text-sm text-[var(--color-text-secondary)]">
+                {activeJobs.length
+                  ? "Generation in progress. Preview and progress update below."
+                  : "Select a source image to extract a depth map."}
+              </div>
+              {error ? (
+                <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div>
+              ) : null}
+            </>
+          }
+        />
       </div>
     </div>
   );

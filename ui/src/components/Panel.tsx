@@ -5,29 +5,31 @@ export function Panel({
   children,
   className = "",
   scanline = false,
-  neonBorder = "none"
+  neonBorder = "none",
+  variant = "glass"
 }: {
   title?: string;
   children: ReactNode;
   className?: string;
   scanline?: boolean;
   neonBorder?: "primary" | "secondary" | "none";
+  variant?: "glass" | "composite";
 }) {
-  const borderClass =
+  const accentClass =
     neonBorder === "primary"
-      ? "neon-border-primary"
+      ? "border-[rgba(124,140,255,0.28)]"
       : neonBorder === "secondary"
-        ? "neon-border-secondary"
-        : "border border-outline-variant/60";
+        ? "border-[rgba(0,212,200,0.28)]"
+        : "";
+
+  const surfaceClass =
+    variant === "composite" ? "panel-composite scan-grid rounded-xl" : "mirror-panel rounded-xl";
+
   return (
     <section
-      className={`beveled rounded-panel bg-surface-container p-6 text-on-surface ${borderClass} ${scanline ? "scanline" : ""} ${className}`}
+      className={`${surfaceClass} p-5 text-on-surface transition duration-150 ${accentClass} ${scanline ? "scanline" : ""} ${className}`}
     >
-      {title ? (
-        <div className="mb-4 font-label text-xs tracking-[0.22em] text-on-surface-variant">
-          {title}
-        </div>
-      ) : null}
+      {title ? <h2 className="panel-title titanium-text mb-4">{title}</h2> : null}
       {children}
     </section>
   );

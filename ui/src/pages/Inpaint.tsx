@@ -1,72 +1,77 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   GenerateButton,
-  ImageGrid,
+  ImageInput,
+  LivePreviewField,
+  LoRAStack,
+  LoraModelNotice,
+  ModuleRunColumn,
   PageHeader,
   Panel,
   PromptInput,
+  QuantizeField,
+  SchedulerField,
   SelectField,
-  SliderField,
-  ToggleChip
+  SeedField,
+  SliderField
 } from "../components";
-import { api } from "../lib/api";
-import type { GenerationOutput } from "../lib/types";
-import { inpaintModelOptions, schedulerOptions } from "./pageData";
-
+import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
+import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
+import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
+import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
+import { defaultSchedulerForModel, normalizeSchedulerForModel, type SchedulerId } from "../lib/schedulerOptions";
+import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
+import { useJobStore } from "../stores/useJobStore";
 export function Inpaint() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("dev-fill");
-  const [quantize, setQuantize] = useState("8");
+  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
   const [steps, setSteps] = useState(25);
   const [guidance, setGuidance] = useState(30);
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
-  const [scheduler, setScheduler] = useState("linear");
+  const [scheduler, setScheduler] = useState<SchedulerId>(defaultSchedulerForModel("dev-fill"));
+  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
   const [seed, setSeed] = useState("42");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [maskFile, setMaskFile] = useState<File | null>(null);
-  const [result, setResult] = useState<GenerationOutput[]>([]);
+  const [searchParams] = useSearchParams();
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [maskPath, setMaskPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const imagePreview = useMemo(
-    () => (imageFile ? URL.createObjectURL(imageFile) : null),
-    [imageFile]
-  );
-  const maskPreview = useMemo(
-    () => (maskFile ? URL.createObjectURL(maskFile) : null),
-    [maskFile]
-  );
+  const submitJob = useJobStore((state) => state.submitJob);
+  const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("inpaint");
+  const { options: modelOptions } = useModuleModelOptions("inpaint", model);
+  const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
+    useModuleLoraStack(model);
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
 
   const onGenerate = async () => {
-    if (!imageFile || !maskFile) {
+    if (!imagePath || !maskPath) {
       return;
     }
     setLoading(true);
     setError(null);
-    const data = new FormData();
-    data.append("prompt", prompt);
-    data.append("model", model);
-    data.append("quantize", quantize);
-    data.append("width", String(width));
-    data.append("height", String(height));
-    data.append("steps", String(steps));
-    data.append("guidance", String(guidance));
-    data.append("scheduler", scheduler);
-    data.append("seed", seed);
-    data.append("image", imageFile);
-    data.append("mask", maskFile);
+    const params = {
+      prompt,
+      model,
+      quantize: quantizeApiValue(quantize),
+      width,
+      height,
+      steps,
+      guidance,
+      scheduler: normalizeSchedulerForModel(model, scheduler),
+      seed: resolveIntegerSeed(seedMode, seed),
+      imagePath,
+      maskedImagePath: maskPath,
+      livePreview,
+      ...loraJobParams
+    };
 
     try {
-      const response = await fetch("/api/inpaint/generate", {
-        method: "POST",
-        body: data
-      });
-      const payload = await response.json();
-      if (!payload.ok) {
-        throw new Error(payload.error?.message ?? "Inpaint failed");
-      }
-      setResult(payload.data.outputs);
+      await submitJob({ module: "inpaint", params });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inpaint failed");
     } finally {
@@ -74,12 +79,20 @@ export function Inpaint() {
     }
   };
 
+  const headerStatus = useModuleHeaderStatus(activeJobs, latestJob);
+
   return (
-    <div className="content-shell">
-      <PageHeader title="INPAINT" description="Masked fill workflow with prompt-driven completion." />
+    <div className="content-shell module-reskin-page module-reskin-page--generation">
+      <LoraModelNotice notice={loraModelNotice} />
+      <PageHeader
+        title="INPAINT"
+        description="Masked fill workflow with prompt-driven completion."
+        version={headerStatus}
+        className="module-reskin-page-header"
+      />
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
-        <div className="space-y-6">
-          <Panel neonBorder="primary" className="space-y-4">
+        <div className="module-form-column space-y-6">
+          <Panel neonBorder="primary" scanline className="space-y-4">
             <PromptInput
               label="PROMPT"
               value={prompt}
@@ -89,102 +102,74 @@ export function Inpaint() {
             />
           </Panel>
           <Panel title="SOURCE + MASK" className="grid gap-4 md:grid-cols-2">
-            <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-panel border border-dashed border-secondary/50 bg-surface-container-low px-6 py-8 text-center transition hover:shadow-glow-secondary">
-              <span className="material-symbols-outlined mb-3 text-4xl text-secondary">image</span>
-              <span className="font-label text-xs tracking-[0.18em] text-on-surface">
-                {imageFile ? imageFile.name : "SELECT SOURCE IMAGE"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-panel border border-dashed border-primary/50 bg-surface-container-low px-6 py-8 text-center transition hover:shadow-glow-primary">
-              <span className="material-symbols-outlined mb-3 text-4xl text-primary">gesture_select</span>
-              <span className="font-label text-xs tracking-[0.18em] text-on-surface">
-                {maskFile ? maskFile.name : "SELECT MASK IMAGE"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => setMaskFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            {imagePreview ? (
-              <img src={imagePreview} alt="Source preview" className="max-h-[220px] w-full rounded-panel object-cover" />
-            ) : null}
-            {maskPreview ? (
-              <img src={maskPreview} alt="Mask preview" className="max-h-[220px] w-full rounded-panel object-cover" />
-            ) : null}
+            <ImageInput
+              defaultPath={searchParams.get("ref") ?? undefined}
+              label="Source Image"
+              onChange={setImagePath}
+              value={imagePath}
+            />
+            <ImageInput label="Mask Image" onChange={setMaskPath} value={maskPath} />
           </Panel>
           <Panel title="MODEL PIPELINE" className="grid gap-4 md:grid-cols-2">
-            <SelectField label="MODEL" value={model} onChange={setModel} options={inpaintModelOptions} />
             <SelectField
-              label="SCHEDULER"
-              value={scheduler}
-              onChange={setScheduler}
-              options={schedulerOptions}
+              label="MODEL"
+              value={model}
+              onChange={(nextModel) => {
+                trackModelChange(model, nextModel);
+                setModel(nextModel);
+                setScheduler(defaultSchedulerForModel(nextModel));
+              }}
+              options={modelOptions}
             />
-            <div>
-              <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                QUANTIZE
-              </div>
-              <ToggleChip options={["3", "4", "5", "6", "8"]} value={quantize} onChange={setQuantize} />
-            </div>
-            <label className="flex flex-col gap-2">
-              <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                SEED
-              </span>
-              <input
-                className="rounded-panel border border-outline-variant/60 bg-surface-container px-3 py-3 text-sm outline-none transition focus:border-secondary/60"
-                type="number"
-                value={seed}
-                onChange={(event) => setSeed(event.target.value)}
-              />
-            </label>
+            <SchedulerField model={model} value={scheduler} onChange={setScheduler} />
+            <QuantizeField value={quantize} onChange={setQuantize} />
+            <SeedField
+              mode={seedMode}
+              onModeChange={setSeedMode}
+              value={seed}
+              onChange={setSeed}
+              className="md:col-span-2"
+            />
           </Panel>
-          <Panel title="GENERATION CONTROLS" className="grid gap-4 md:grid-cols-2">
-            <SliderField label="STEPS" value={steps} onChange={setSteps} min={1} max={60} />
-            <SliderField
-              label="GUIDANCE"
-              value={guidance}
-              onChange={setGuidance}
-              min={1}
-              max={40}
-              step={1}
+          <Panel title="LORA STACK">
+            <LoRAStack
+              value={loras}
+              onChange={setLoras}
+              model={model}
+              onCompatibilityChange={onCompatibilityChange}
             />
+          </Panel>
+          <Panel title="GENERATION CONTROLS" className="space-y-4">
+            <SliderField label="STEPS" value={steps} onChange={setSteps} min={1} max={60} />
+            <SliderField label="GUIDANCE" value={guidance} onChange={setGuidance} min={1} max={40} step={1} />
             <SliderField label="WIDTH" value={width} onChange={setWidth} min={256} max={1536} step={64} />
             <SliderField label="HEIGHT" value={height} onChange={setHeight} min={256} max={1536} step={64} />
+            <LivePreviewField value={livePreview} onChange={setLivePreview} />
           </Panel>
         </div>
-        <div className="space-y-6">
-          <Panel title="RUN CONTROL" neonBorder="secondary" className="space-y-4">
-            <GenerateButton
-              onClick={onGenerate}
-              loading={loading}
-              disabled={!prompt.trim() || !imageFile || !maskFile}
-              label="RUN INPAINT"
-            />
-            <div className="text-sm text-on-surface-variant">
-              Uses the audited `mflux-generate-fill` path with uploaded source and mask images.
-            </div>
-            {error ? (
-              <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div>
-            ) : null}
-          </Panel>
-          <Panel title="LATEST OUTPUTS">
-            {result.length ? (
-              <ImageGrid images={result} columns={1} />
-            ) : (
-              <div className="text-sm text-on-surface-variant">
-                No inpaint outputs yet. Upload a source image and mask to run the fill workflow.
+        <ModuleRunColumn
+          job={latestJob}
+          stepwiseImages={stepwiseImages}
+          runControl={
+            <>
+              <GenerateButton
+                onClick={onGenerate}
+                loading={loading}
+                disabled={!prompt.trim() || !imagePath || !maskPath}
+                label="RUN INPAINT"
+                className="module-primary-action w-full"
+              />
+              <div className="font-body text-sm text-[var(--color-text-secondary)]">
+                {activeJobs.length
+                  ? "Generation in progress. Preview and progress update below."
+                  : "Runs a masked fill using the selected source image, mask, and prompt."}
               </div>
-            )}
-          </Panel>
-        </div>
+              {error ? (
+                <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div>
+              ) : null}
+            </>
+          }
+        />
       </div>
     </div>
   );

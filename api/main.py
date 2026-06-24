@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import config, controlnet, depth_pro, gallery, img2img, inpaint, kontext, models, system, txt2img, upscaler
+from api.routers import config, gallery, jobs, models, secrets, system, uploads
 
 app = FastAPI(title="MFLUX Neural Interface API", version="0.1.0")
 
@@ -16,11 +16,12 @@ app.add_middleware(
 app.include_router(system.router)
 app.include_router(models.router)
 app.include_router(config.router)
+app.include_router(secrets.router)
 app.include_router(gallery.router)
-app.include_router(txt2img.router)
-app.include_router(img2img.router)
-app.include_router(inpaint.router)
-app.include_router(kontext.router)
-app.include_router(controlnet.router)
-app.include_router(upscaler.router)
-app.include_router(depth_pro.router)
+app.include_router(uploads.router)
+app.include_router(jobs.router)
+
+
+@app.on_event("startup")
+def startup_cleanup_uploads() -> None:
+    uploads.cleanup_old_uploads()

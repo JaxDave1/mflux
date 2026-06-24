@@ -1,12 +1,13 @@
 import json
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
-from api.schemas.responses import ApiEnvelope, GalleryResponse, GenerationOutput
+from api.schemas.responses import ApiEnvelope, ApiError, GalleryResponse, GallerySidecarResponse, GenerationOutput
 from api.services.config_store import ConfigStore
 from api.services.mflux_cli import _resolve_path
 
@@ -24,8 +25,9 @@ except ImportError:  # pragma: no cover - optional runtime enhancement
 
 def _read_json(path: Path) -> dict:
     try:
-        return json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
+        parsed = json.loads(path.read_text())
+        return parsed if isinstance(parsed, dict) else {}
+    except (OSError, json.JSONDecodeError, TypeError):
         return {}
 
 
@@ -69,7 +71,9 @@ def _read_embedded_metadata(path: Path) -> tuple[dict, str | None]:
 def _merge_metadata(path: Path) -> tuple[dict, str]:
     sidecar_metadata, sidecar_source = _read_sidecar_metadata(path)
     embedded_metadata, embedded_source = _read_embedded_metadata(path)
-    metadata = {**embedded_metadata, **sidecar_metadata}
+    safe_sidecar = sidecar_metadata if isinstance(sidecar_metadata, dict) else {}
+    safe_embedded = embedded_metadata if isinstance(embedded_metadata, dict) else {}
+    metadata = {**safe_embedded, **safe_sidecar}
     if not metadata:
         return {}, "none"
     if sidecar_source:
@@ -125,6 +129,48 @@ def _output_dir() -> Path:
     return output_dir
 
 
+def _is_under(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _safe_gallery_item_path(item_id: str) -> Path:
+    if "/" in item_id or "\\" in item_id or ".." in Path(item_id).parts:
+        raise HTTPException(status_code=400, detail="Gallery id must not contain path segments")
+
+    output_dir = _output_dir().resolve()
+    matches = [
+        path.resolve()
+        for path in output_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES and path.stem == item_id
+    ]
+    if not matches:
+        raise HTTPException(status_code=404, detail="Gallery item not found")
+
+    target = sorted(matches, key=lambda candidate: candidate.stat().st_mtime, reverse=True)[0]
+    if not _is_under(target, output_dir):
+        raise HTTPException(status_code=400, detail="Gallery item resolves outside configured output directory")
+    return target
+
+
+def _error_envelope(status_code: int, code: str, message: str, details: str | None = None) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content=ApiEnvelope[dict](ok=False, error=ApiError(code=code, message=message, details=details)).model_dump(mode="json"),
+    )
+
+
+def _metadata_sidecars(path: Path) -> list[Path]:
+    return [path.with_suffix(".metadata.json"), path.with_suffix(".json")]
+
+
+def _read_sidecar_raw(path: Path) -> object:
+    return json.loads(path.read_text())
+
+
 @router.get("/gallery/file")
 def get_gallery_file(path: str = Query(...)) -> FileResponse:
     output_dir = _output_dir().resolve()
@@ -172,3 +218,67 @@ def get_gallery() -> ApiEnvelope[GalleryResponse]:
             )
         )
     return ApiEnvelope(ok=True, data=GalleryResponse(total=len(items), items=items))
+
+
+@router.get("/gallery/{item_id:path}/sidecar")
+def get_gallery_sidecar(item_id: str):
+    try:
+        target = _safe_gallery_item_path(item_id)
+    except HTTPException as exc:
+        code = "path_outside_output_dir" if exc.status_code == 400 else "not_found"
+        return _error_envelope(exc.status_code, code, str(exc.detail), item_id)
+
+    for sidecar in _metadata_sidecars(target):
+        if not sidecar.exists():
+            continue
+        try:
+            content = _read_sidecar_raw(sidecar)
+        except (OSError, json.JSONDecodeError) as exc:
+            return _error_envelope(500, "sidecar_read_failed", "Failed to read metadata sidecar", str(exc))
+        return ApiEnvelope(
+            ok=True,
+            data=GallerySidecarResponse(filename=sidecar.name, path=str(sidecar), content=content),
+        )
+
+    return _error_envelope(404, "sidecar_not_found", "No JSON metadata sidecar found for gallery item", item_id)
+
+
+@router.delete("/gallery/{item_id:path}")
+def delete_gallery_item(item_id: str):
+    try:
+        target = _safe_gallery_item_path(item_id)
+    except HTTPException as exc:
+        code = "path_outside_output_dir" if exc.status_code == 400 else "not_found"
+        return _error_envelope(exc.status_code, code, str(exc.detail), item_id)
+
+    deleted_path = str(target)
+    metadata_deleted = False
+    try:
+        for sidecar in _metadata_sidecars(target):
+            if sidecar.exists():
+                sidecar.unlink()
+                metadata_deleted = True
+        target.unlink()
+    except OSError as exc:
+        return _error_envelope(500, "delete_failed", "Failed to delete gallery item", str(exc))
+
+    return ApiEnvelope(ok=True, data={"deleted_path": deleted_path, "metadata_deleted": metadata_deleted})
+
+
+@router.post("/gallery/{item_id:path}/reveal")
+def reveal_gallery_item(item_id: str):
+    try:
+        target = _safe_gallery_item_path(item_id)
+    except HTTPException as exc:
+        code = "path_outside_output_dir" if exc.status_code == 400 else "not_found"
+        return _error_envelope(exc.status_code, code, str(exc.detail), item_id)
+
+    completed = subprocess.run(["open", "-R", str(target)], capture_output=True, text=True)
+    if completed.returncode != 0:
+        return _error_envelope(
+            500,
+            "reveal_failed",
+            "Failed to reveal gallery item in Finder",
+            (completed.stderr or completed.stdout or "").strip() or None,
+        )
+    return ApiEnvelope(ok=True, data={"status": "revealed"})

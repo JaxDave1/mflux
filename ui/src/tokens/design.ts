@@ -1,12 +1,12 @@
 export const colors = {
-  primary: "#ff2d78",
-  secondary: "#00ffcc",
-  tertiary: "#ffe04a",
-  background: "#0a0a12",
-  surfaceContainer: "#141422",
-  surfaceContainerLow: "#111118",
-  onSurface: "#e8e0f0",
-  onSurfaceVariant: "#a098b0"
+  primary: "#7C8CFF",
+  secondary: "#00D4C8",
+  tertiary: "#FFB454",
+  background: "#001F3F",
+  surfaceContainer: "#002B55",
+  surfaceContainerLow: "#001428",
+  onSurface: "#FFFFFF",
+  onSurfaceVariant: "#A0B4D0"
 } as const;
 
 export const buttonVariants = {

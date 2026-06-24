@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import { buttonVariants } from "../tokens/design";
 
 export function GenerateButton({
@@ -24,7 +25,7 @@ export function GenerateButton({
       disabled={disabled || loading}
       className={`flex items-center justify-center gap-2 rounded-panel px-4 py-3 font-label text-xs tracking-[0.24em] disabled:cursor-not-allowed disabled:opacity-40 ${buttonVariants[variant]} ${className}`}
     >
-      <span className="material-symbols-outlined text-[18px]">{loading ? "progress_activity" : icon}</span>
+      <Icon className={`text-[18px] ${loading ? "animate-spin" : ""}`} name={loading ? "progress_activity" : icon} />
       {loading ? "GENERATING" : label}
     </button>
   );

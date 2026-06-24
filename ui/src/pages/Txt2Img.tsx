@@ -1,76 +1,185 @@
 import { useEffect, useState } from "react";
 import {
   GenerateButton,
-  ImageGrid,
+  LivePreviewField,
+  LoRAStack,
+  LoraModelNotice,
+  ModuleRunColumn,
   PageHeader,
   Panel,
   PromptInput,
+  QuantizeField,
+  SchedulerField,
   SelectField,
+  SeedField,
   SliderField,
   ToggleChip
 } from "../components";
+import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
+import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
+import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
+import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
 import { api } from "../lib/api";
-import type { Txt2ImgRequest } from "../lib/types";
-import { useGenerationStore } from "../stores/useGenerationStore";
-import { schedulerOptions, txt2imgModelOptions } from "./pageData";
+import type { ModelDefaultsResponse, Txt2ImgRequest } from "../lib/types";
+import { quantizeApiValue, quantizeSelectionFromApi, type QuantizeSelection } from "../lib/quantize";
+import {
+  normalizeSchedulerForModel,
+  type SchedulerId
+} from "../lib/schedulerOptions";
+import { resolveTxt2ImgSeed, type SeedMode } from "../lib/seed";
+import { useConfigStore } from "../stores/useConfigStore";
+import { useJobStore } from "../stores/useJobStore";
+
+type DirtyDefaults = {
+  steps: boolean;
+  guidance: boolean;
+  quantize: boolean;
+};
 
 export function Txt2Img() {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
+  const [supportsNegativePrompt, setSupportsNegativePrompt] = useState(false);
   const [model, setModel] = useState("z-image-turbo");
-  const [quantize, setQuantize] = useState("8");
+  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
   const [steps, setSteps] = useState(9);
-  const [guidance, setGuidance] = useState(3.5);
+  const [guidance, setGuidance] = useState<number | null>(0);
   const [width, setWidth] = useState(1280);
   const [height, setHeight] = useState(768);
-  const [scheduler, setScheduler] = useState("linear");
-  const [seed, setSeed] = useState<number | null>(42);
+  const [scheduler, setScheduler] = useState<SchedulerId>("linear");
+  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
+  const [seedInput, setSeedInput] = useState("42");
+  const [lowRam, setLowRam] = useState(false);
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+  const [dirty, setDirty] = useState<DirtyDefaults>({ steps: false, guidance: false, quantize: false });
+  const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange } =
+    useModuleLoraStack(model);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { currentJob, recentOutputs, startJob, completeJob, failJob } = useGenerationStore();
+  const submitJob = useJobStore((state) => state.submitJob);
+  const { config, loadConfig } = useConfigStore();
+  const {
+    job: latestTxt2ImgJob,
+    stepwiseImages: latestStepwiseImages,
+    activeJobs
+  } = useModuleLivePreview("txt2img");
+  const { options: modelOptions } = useModuleModelOptions("txt2img", model);
 
   useEffect(() => {
-    if (!recentOutputs.length) {
+    void loadConfig();
+  }, [loadConfig]);
+
+  useEffect(() => {
+    if (!config) {
       return;
     }
+    setLowRam(config.system.lowRamMode);
+  }, [config]);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .moduleDefaults("txt2img")
+      .then((defaults) => {
+        if (!alive) {
+          return;
+        }
+        setModel(defaults.model);
+        setWidth(defaults.width);
+        setHeight(defaults.height);
+        setSupportsNegativePrompt(defaults.supports_negative_prompt);
+        if (!dirty.steps && defaults.steps !== null) {
+          setSteps(defaults.steps);
+        }
+        if (!dirty.guidance) {
+          setGuidance(defaults.guidance);
+        }
+        if (!dirty.quantize) {
+          setQuantize(quantizeSelectionFromApi(defaults.quantize));
+        }
+        setScheduler(normalizeSchedulerForModel(defaults.model, defaults.scheduler));
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load txt2img defaults."));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const applyModelDefaults = async (nextModel: string) => {
+    trackModelChange(model, nextModel);
+    setModel(nextModel);
     setError(null);
-  }, [recentOutputs.length]);
+    try {
+      const defaults: ModelDefaultsResponse = await api.modelDefaults(nextModel);
+      setSupportsNegativePrompt(defaults.supports_negative_prompt);
+      if (!defaults.supports_negative_prompt) {
+        setNegativePrompt("");
+      }
+      if (!dirty.steps && defaults.steps !== null) {
+        setSteps(defaults.steps);
+      }
+      if (!dirty.guidance) {
+        setGuidance(defaults.guidance);
+      }
+      if (!dirty.quantize) {
+        setQuantize(quantizeSelectionFromApi(defaults.quantize));
+      }
+      setScheduler(normalizeSchedulerForModel(nextModel, defaults.scheduler));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load model defaults.");
+    }
+  };
 
   const onGenerate = async () => {
     setLoading(true);
     setError(null);
-    const payload: Txt2ImgRequest = {
-      prompt,
-      negativePrompt,
-      model,
-      quantize: Number(quantize),
-      width,
-      height,
-      steps,
-      guidance,
-      scheduler,
-      seed
-    };
-
     try {
-      const response = await api.txt2imgGenerate(payload);
-      startJob(response.job);
-      completeJob(response.outputs);
+      const seedPayload = resolveTxt2ImgSeed(seedMode, seedInput);
+      if (seedPayload.displaySeed) {
+        setSeedInput(seedPayload.displaySeed);
+      }
+      const { displaySeed: _displaySeed, ...seedParams } = seedPayload;
+      const payload: Txt2ImgRequest = {
+        prompt,
+        negativePrompt: supportsNegativePrompt ? negativePrompt : "",
+        model,
+        quantize: quantizeApiValue(quantize),
+        width,
+        height,
+        steps,
+        guidance,
+        scheduler: normalizeSchedulerForModel(model, scheduler),
+        metadata: config?.generation.saveMetadataSidecar ?? true,
+        lowRam,
+        livePreview,
+        ...seedParams
+      };
+      if (loras.length) {
+        payload.loras = loras;
+      }
+      await submitJob({ module: "txt2img", params: { ...payload } });
     } catch (err) {
-      failJob();
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setLoading(false);
     }
   };
 
+  const headerStatus = useModuleHeaderStatus(activeJobs, latestTxt2ImgJob);
   return (
-    <div className="content-shell">
-      <PageHeader title="TXT2IMG" version="VERSION 0.1.0-NEURAL" />
+    <div className="content-shell module-reskin-page module-reskin-page--generation">
+      <LoraModelNotice notice={loraModelNotice} />
+      <PageHeader
+        title="TXT2IMG"
+        description="Prompt-first image generation with live runtime controls."
+        version={headerStatus}
+        className="module-reskin-page-header"
+      />
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
-        <div className="space-y-6">
-          <Panel neonBorder="primary" className="space-y-4">
+        <div className="module-form-column space-y-6">
+          <Panel neonBorder="primary" scanline className="space-y-4">
             <PromptInput
               label="PROMPT"
               value={prompt}
@@ -78,83 +187,106 @@ export function Txt2Img() {
               placeholder="Enter positive prompt"
               variant="secondary"
             />
-            <PromptInput
-              label="NEGATIVE PROMPT"
-              value={negativePrompt}
-              onChange={setNegativePrompt}
-              placeholder="Exclude elements"
-              rows={2}
-            />
+            {supportsNegativePrompt ? (
+              <PromptInput
+                label="NEGATIVE PROMPT"
+                value={negativePrompt}
+                onChange={setNegativePrompt}
+                placeholder="Terms to suppress for Qwen models"
+                rows={3}
+              />
+            ) : null}
           </Panel>
+
           <Panel title="MODEL PIPELINE" className="grid gap-4 md:grid-cols-2">
-            <SelectField label="MODEL" value={model} onChange={setModel} options={txt2imgModelOptions} />
             <SelectField
-              label="SCHEDULER"
-              value={scheduler}
-              onChange={setScheduler}
-              options={schedulerOptions}
+              label="MODEL"
+              value={model}
+              onChange={(value) => void applyModelDefaults(value)}
+              options={modelOptions}
             />
-            <div>
-              <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                QUANTIZE
-              </div>
-              <ToggleChip
-                options={["3", "4", "5", "6", "8"]}
-                value={quantize}
-                onChange={setQuantize}
-              />
-            </div>
-            <label className="flex flex-col gap-2">
-              <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                SEED
-              </span>
-              <input
-                className="rounded-panel border border-outline-variant/60 bg-surface-container px-3 py-3 text-sm outline-none transition focus:border-secondary/60"
-                type="number"
-                value={seed ?? ""}
-                onChange={(event) => setSeed(event.target.value ? Number(event.target.value) : null)}
-              />
-            </label>
+            <SchedulerField model={model} value={scheduler} onChange={setScheduler} />
+            <QuantizeField
+              value={quantize}
+              onChange={(value) => {
+                setDirty((current) => ({ ...current, quantize: true }));
+                setQuantize(value);
+              }}
+            />
+            <SeedField
+              mode={seedMode}
+              onModeChange={setSeedMode}
+              value={seedInput}
+              onChange={setSeedInput}
+              variant="advanced"
+              className="md:col-span-2"
+            />
           </Panel>
-          <Panel title="GENERATION CONTROLS" className="grid gap-4 md:grid-cols-2">
-            <SliderField label="STEPS" value={steps} onChange={setSteps} min={1} max={60} />
-            <SliderField
-              label="GUIDANCE"
-              value={guidance}
-              onChange={setGuidance}
-              min={1}
-              max={20}
-              step={0.5}
+
+          <Panel title="LORA STACK">
+            <LoRAStack
+              value={loras}
+              onChange={setLoras}
+              model={model}
+              onCompatibilityChange={onCompatibilityChange}
             />
-            <SliderField label="WIDTH" value={width} onChange={setWidth} min={256} max={1536} step={64} />
-            <SliderField label="HEIGHT" value={height} onChange={setHeight} min={256} max={1536} step={64} />
+          </Panel>
+
+          <Panel title="GENERATION CONTROLS" className="space-y-4">
+            <div className="space-y-4">
+              <SliderField
+                label="STEPS"
+                value={steps}
+                onChange={(value) => {
+                  setDirty((current) => ({ ...current, steps: true }));
+                  setSteps(value);
+                }}
+                min={1}
+                max={100}
+              />
+              {guidance !== null ? (
+                <SliderField
+                  label="GUIDANCE"
+                  value={guidance}
+                  onChange={(value) => {
+                    setDirty((current) => ({ ...current, guidance: true }));
+                    setGuidance(value);
+                  }}
+                  min={0}
+                  max={40}
+                  step={0.5}
+                />
+              ) : null}
+              <SliderField label="WIDTH" value={width} onChange={setWidth} min={256} max={2048} step={64} />
+              <SliderField label="HEIGHT" value={height} onChange={setHeight} min={256} max={2048} step={64} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <LivePreviewField value={livePreview} onChange={setLivePreview} />
+              <div>
+                <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">LOW RAM MODE</div>
+                <ToggleChip options={["OFF", "ON"]} value={lowRam ? "ON" : "OFF"} onChange={(value) => setLowRam(value === "ON")} />
+              </div>
+            </div>
           </Panel>
         </div>
-        <div className="space-y-6">
-          <Panel title="RUN CONTROL" neonBorder="secondary" className="space-y-4">
+
+        <ModuleRunColumn job={latestTxt2ImgJob} stepwiseImages={latestStepwiseImages} runControl={
+          <>
             <GenerateButton
               onClick={onGenerate}
               loading={loading}
               disabled={!prompt.trim()}
               label="GENERATE IMAGE"
+              className="module-primary-action w-full"
             />
-            <div className="text-sm text-on-surface-variant">
-              {currentJob?.status === "completed"
-                ? "Latest job completed."
-                : currentJob?.status === "running"
-                  ? "Generation in progress."
-                  : "Waiting for prompt input."}
+            <div className="font-body text-sm text-[var(--color-text-secondary)]">
+              {activeJobs.length
+                ? "Generation in progress. Preview and progress update below."
+                : "Enter a prompt to start a generation run."}
             </div>
             {error ? <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div> : null}
-          </Panel>
-          <Panel title="RECENT OUTPUTS">
-            {recentOutputs.length ? (
-              <ImageGrid images={recentOutputs.slice(0, 4)} columns={2} />
-            ) : (
-              <div className="text-sm text-on-surface-variant">No outputs yet. Generate an image to populate the gallery feed.</div>
-            )}
-          </Panel>
-        </div>
+          </>
+        } />
       </div>
     </div>
   );

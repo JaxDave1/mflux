@@ -1,60 +1,197 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   GenerateButton,
-  ImageGrid,
+  ImageInput,
+  LivePreviewField,
+  LoRAStack,
+  LoraModelNotice,
+  ModuleRunColumn,
   PageHeader,
   Panel,
   PromptInput,
+  QuantizeField,
+  SchedulerField,
   SelectField,
-  SliderField,
-  ToggleChip
+  SeedField,
+  SliderField
 } from "../components";
+import { useGalleryReference } from "../hooks/useGalleryReference";
+import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
+import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
+import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
+import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
 import { api } from "../lib/api";
-import type { GenerationOutput } from "../lib/types";
-import { img2imgModelOptions, schedulerOptions } from "./pageData";
+import { quantizeApiValue, quantizeSelectionFromApi, type QuantizeSelection } from "../lib/quantize";
+import {
+  normalizeSchedulerForModel,
+  type SchedulerId
+} from "../lib/schedulerOptions";
+import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
+import { resolveInputImageSrc } from "../lib/media";
+import { useJobStore } from "../stores/useJobStore";
+
+function snapDimension(value: number) {
+  const clamped = Math.min(1536, Math.max(256, value));
+  return Math.round(clamped / 64) * 64;
+}
 
 export function Img2Img() {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
+  const [supportsNegativePrompt, setSupportsNegativePrompt] = useState(false);
   const [model, setModel] = useState("z-image-turbo");
-  const [quantize, setQuantize] = useState("8");
+  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
   const [steps, setSteps] = useState(9);
-  const [guidance, setGuidance] = useState(3.5);
+  const [guidance, setGuidance] = useState<number | null>(3.5);
   const [width, setWidth] = useState(1280);
   const [height, setHeight] = useState(768);
-  const [scheduler, setScheduler] = useState("linear");
+  const [scheduler, setScheduler] = useState<SchedulerId>("linear");
+  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
   const [seed, setSeed] = useState("42");
   const [imageStrength, setImageStrength] = useState(0.75);
-  const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<GenerationOutput[]>([]);
+  const [imagePath, setImagePath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const submitJob = useJobStore((state) => state.submitJob);
+  const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("img2img");
+  const { options: modelOptions } = useModuleModelOptions("img2img", model);
+  const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
+    useModuleLoraStack(model);
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+  const [searchParams] = useSearchParams();
+  const hasGalleryReference = Boolean(searchParams.get("ref")?.trim());
+  const dimensionSyncedPathRef = useRef<string | null>(null);
 
-  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  const handleImagePathChange = useCallback((path: string | null) => {
+    dimensionSyncedPathRef.current = null;
+    setImagePath(path);
+  }, []);
+
+  const applyModelDefaults = useCallback(async (nextModel: string) => {
+    trackModelChange(model, nextModel);
+    setModel(nextModel);
+    setError(null);
+    try {
+      const defaults = await api.modelDefaults(nextModel);
+      setSupportsNegativePrompt(defaults.supports_negative_prompt);
+      if (!defaults.supports_negative_prompt) {
+        setNegativePrompt("");
+      }
+      if (defaults.steps !== null) {
+        setSteps(defaults.steps);
+      }
+      setGuidance(defaults.guidance);
+      setQuantize(quantizeSelectionFromApi(defaults.quantize));
+      setScheduler(normalizeSchedulerForModel(nextModel, defaults.scheduler));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load model defaults.");
+    }
+  }, [model, trackModelChange]);
+
+  const handleGalleryModel = useCallback(
+    (nextModel: string) => {
+      void applyModelDefaults(nextModel);
+    },
+    [applyModelDefaults]
+  );
+
+  const galleryReference = useGalleryReference({
+    onPath: handleImagePathChange,
+    onWidth: setWidth,
+    onHeight: setHeight,
+    onModel: handleGalleryModel
+  });
+
+  const sourcePrompt = galleryReference?.sourcePrompt ?? galleryReference?.prompt;
+
+  useEffect(() => {
+    if (hasGalleryReference) {
+      return;
+    }
+
+    let alive = true;
+    api
+      .moduleDefaults("img2img")
+      .then((defaults) => {
+        if (!alive) {
+          return;
+        }
+        setModel(defaults.model);
+        setWidth(defaults.width);
+        setHeight(defaults.height);
+        setSupportsNegativePrompt(defaults.supports_negative_prompt);
+        if (defaults.steps !== null) {
+          setSteps(defaults.steps);
+        }
+        setGuidance(defaults.guidance);
+        setQuantize(quantizeSelectionFromApi(defaults.quantize));
+        setScheduler(normalizeSchedulerForModel(defaults.model, defaults.scheduler));
+      })
+      .catch((err) => {
+        if (alive) {
+          setError(err instanceof Error ? err.message : "Failed to load img2img defaults.");
+        }
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [hasGalleryReference]);
+
+  useEffect(() => {
+    if (!imagePath || dimensionSyncedPathRef.current === imagePath) {
+      return;
+    }
+
+    let cancelled = false;
+    const image = new window.Image();
+    image.onload = () => {
+      if (cancelled) {
+        return;
+      }
+      dimensionSyncedPathRef.current = imagePath;
+      setWidth(snapDimension(image.naturalWidth));
+      setHeight(snapDimension(image.naturalHeight));
+    };
+    image.onerror = () => {
+      if (!cancelled) {
+        dimensionSyncedPathRef.current = imagePath;
+      }
+    };
+    image.src = resolveInputImageSrc(imagePath);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imagePath]);
 
   const onGenerate = async () => {
-    if (!file) {
+    if (!imagePath) {
       return;
     }
     setLoading(true);
     setError(null);
-    const data = new FormData();
-    data.append("prompt", prompt);
-    data.append("negativePrompt", negativePrompt);
-    data.append("model", model);
-    data.append("quantize", quantize);
-    data.append("width", String(width));
-    data.append("height", String(height));
-    data.append("steps", String(steps));
-    data.append("guidance", String(guidance));
-    data.append("scheduler", scheduler);
-    data.append("seed", seed);
-    data.append("imageStrength", String(imageStrength));
-    data.append("image", file);
+    const params = {
+      prompt,
+      negativePrompt: supportsNegativePrompt ? negativePrompt : "",
+      model,
+      quantize: quantizeApiValue(quantize),
+      width,
+      height,
+      steps,
+      guidance: guidance === null || guidance <= 0 ? 0.01 : guidance,
+      scheduler: normalizeSchedulerForModel(model, scheduler),
+      seed: resolveIntegerSeed(seedMode, seed),
+      imageStrength,
+      imagePath,
+      livePreview,
+      ...loraJobParams
+    };
 
     try {
-      const response = await api.img2imgGenerate(data);
-      setResult(response.outputs);
+      await submitJob({ module: "img2img", params });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Img2img failed");
     } finally {
@@ -62,46 +199,53 @@ export function Img2Img() {
     }
   };
 
+  const headerStatus = useModuleHeaderStatus(activeJobs, latestJob);
   return (
-    <div className="content-shell">
-      <PageHeader title="IMG2IMG" description="Reference-driven generation and denoise control." />
+    <div className="content-shell module-reskin-page module-reskin-page--generation">
+      <LoraModelNotice notice={loraModelNotice} />
+      <PageHeader
+        title="IMG2IMG"
+        description="Reference-driven image transformation with denoise control."
+        version={headerStatus}
+        className="module-reskin-page-header"
+      />
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
-        <div className="space-y-6">
-          <Panel neonBorder="primary" className="space-y-4">
+        <div className="module-form-column space-y-6">
+          {galleryReference ? (
+            <div className="rounded-panel border border-secondary/35 bg-secondary/10 px-4 py-3 text-sm leading-6 text-secondary">
+              <div>Source image loaded from gallery.</div>
+              {sourcePrompt ? (
+                <div className="mt-2 text-on-surface-variant">
+                  Original prompt: <span className="text-on-surface">"{sourcePrompt}"</span>
+                </div>
+              ) : null}
+              <div className="mt-2">Enter a new prompt below describing how you want to transform this image.</div>
+            </div>
+          ) : null}
+          <Panel neonBorder="primary" scanline className="space-y-4">
             <PromptInput
               label="PROMPT"
               value={prompt}
               onChange={setPrompt}
-              placeholder="Describe the transformation"
+              placeholder={
+                galleryReference
+                  ? "Describe how to transform the source image"
+                  : "Describe the transformation"
+              }
               variant="secondary"
             />
-            <PromptInput
-              label="NEGATIVE PROMPT"
-              value={negativePrompt}
-              onChange={setNegativePrompt}
-              placeholder="Exclude elements"
-              rows={2}
-            />
+            {supportsNegativePrompt ? (
+              <PromptInput
+                label="NEGATIVE PROMPT"
+                value={negativePrompt}
+                onChange={setNegativePrompt}
+                placeholder="Terms to suppress for Qwen Image Edit"
+                rows={3}
+              />
+            ) : null}
           </Panel>
           <Panel title="SOURCE IMAGE" className="space-y-4">
-            <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-panel border border-dashed border-secondary/50 bg-surface-container-low px-6 py-8 text-center transition hover:shadow-glow-secondary">
-              <span className="material-symbols-outlined mb-3 text-4xl text-secondary">upload_file</span>
-              <span className="font-label text-xs tracking-[0.18em] text-on-surface">
-                {file ? file.name : "SELECT SOURCE IMAGE"}
-              </span>
-              <span className="mt-2 text-sm text-on-surface-variant">
-                File picker workflow wired. Drag/drop can be layered on top later.
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            {previewUrl ? (
-              <img src={previewUrl} alt="Source preview" className="max-h-[240px] w-full rounded-panel object-cover" />
-            ) : null}
+            <ImageInput label="Source Image" onChange={handleImagePathChange} value={imagePath} />
             <SliderField
               label="IMAGE STRENGTH"
               value={imageStrength}
@@ -112,74 +256,70 @@ export function Img2Img() {
             />
           </Panel>
           <Panel title="MODEL PIPELINE" className="grid gap-4 md:grid-cols-2">
-            <SelectField label="MODEL" value={model} onChange={setModel} options={img2imgModelOptions} />
             <SelectField
-              label="SCHEDULER"
-              value={scheduler}
-              onChange={setScheduler}
-              options={schedulerOptions}
+              label="MODEL"
+              value={model}
+              onChange={(nextModel) => void applyModelDefaults(nextModel)}
+              options={modelOptions}
             />
-            <div>
-              <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                QUANTIZE
-              </div>
-              <ToggleChip
-                options={["3", "4", "5", "6", "8"]}
-                value={quantize}
-                onChange={setQuantize}
-              />
-            </div>
-            <label className="flex flex-col gap-2">
-              <span className="font-label text-[10px] tracking-[0.18em] text-on-surface-variant">
-                SEED
-              </span>
-              <input
-                className="rounded-panel border border-outline-variant/60 bg-surface-container px-3 py-3 text-sm outline-none transition focus:border-secondary/60"
-                type="number"
-                value={seed}
-                onChange={(event) => setSeed(event.target.value)}
-              />
-            </label>
+            <SchedulerField model={model} value={scheduler} onChange={setScheduler} />
+            <QuantizeField value={quantize} onChange={setQuantize} />
+            <SeedField
+              mode={seedMode}
+              onModeChange={setSeedMode}
+              value={seed}
+              onChange={setSeed}
+              className="md:col-span-2"
+            />
           </Panel>
-          <Panel title="GENERATION CONTROLS" className="grid gap-4 md:grid-cols-2">
-            <SliderField label="STEPS" value={steps} onChange={setSteps} min={1} max={60} />
-            <SliderField
-              label="GUIDANCE"
-              value={guidance}
-              onChange={setGuidance}
-              min={1}
-              max={20}
-              step={0.5}
+          <Panel title="LORA STACK">
+            <LoRAStack
+              value={loras}
+              onChange={setLoras}
+              model={model}
+              onCompatibilityChange={onCompatibilityChange}
             />
+          </Panel>
+          <Panel title="GENERATION CONTROLS" className="space-y-4">
+            <SliderField label="STEPS" value={steps} onChange={setSteps} min={1} max={60} />
+            {guidance !== null ? (
+              <SliderField
+                label="GUIDANCE"
+                value={guidance}
+                onChange={setGuidance}
+                min={0}
+                max={20}
+                step={0.5}
+              />
+            ) : null}
             <SliderField label="WIDTH" value={width} onChange={setWidth} min={256} max={1536} step={64} />
             <SliderField label="HEIGHT" value={height} onChange={setHeight} min={256} max={1536} step={64} />
+            <LivePreviewField value={livePreview} onChange={setLivePreview} />
           </Panel>
         </div>
-        <div className="space-y-6">
-          <Panel title="RUN CONTROL" neonBorder="secondary" className="space-y-4">
-            <GenerateButton
-              onClick={onGenerate}
-              loading={loading}
-              disabled={!prompt.trim() || !file}
-              label="RUN IMG2IMG"
-            />
-            <div className="text-sm text-on-surface-variant">
-              Uses the audited `mflux-generate` path with `--image-path` and `--image-strength`.
-            </div>
-            {error ? (
-              <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div>
-            ) : null}
-          </Panel>
-          <Panel title="LATEST OUTPUTS">
-            {result.length ? (
-              <ImageGrid images={result} columns={1} />
-            ) : (
-              <div className="text-sm text-on-surface-variant">
-                No img2img outputs yet. Upload an image and run the transform.
+        <ModuleRunColumn
+          job={latestJob}
+          stepwiseImages={stepwiseImages}
+          runControl={
+            <>
+              <GenerateButton
+                onClick={onGenerate}
+                loading={loading}
+                disabled={!prompt.trim() || !imagePath}
+                label="RUN IMG2IMG"
+                className="module-primary-action w-full"
+              />
+              <div className="font-body text-sm text-[var(--color-text-secondary)]">
+                {activeJobs.length
+                  ? "Generation in progress. Preview and progress update below."
+                  : "Runs the current prompt against the selected source image and denoise strength."}
               </div>
-            )}
-          </Panel>
-        </div>
+              {error ? (
+                <div className="rounded-panel bg-error-container px-3 py-3 text-sm text-on-error-container">{error}</div>
+              ) : null}
+            </>
+          }
+        />
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
+import importlib
 from pathlib import Path
 
 from fastapi import APIRouter
 
 from api.routers.gallery import IMAGE_SUFFIXES, _classify_module, _merge_metadata
-from api.schemas.responses import ApiEnvelope, ModuleValidation, RuntimeSummary, SystemStatus
+from api.schemas.responses import ApiEnvelope, HealthResponse, ModuleValidation, RuntimeSummary, SystemStatus
 from api.services.config_store import ConfigStore
+from api.services.job_manager import job_manager
 from api.services.mflux_cli import _resolve_path
 from api.services.system_info import get_system_status
 
@@ -14,13 +16,34 @@ EXPECTED_MODULES = ("txt2img", "img2img", "inpaint", "kontext", "controlnet", "u
 
 
 @router.get("/health")
-def health() -> ApiEnvelope[dict[str, str]]:
-    return ApiEnvelope(ok=True, data={"status": "healthy", "version": "0.1.0"})
+def health() -> ApiEnvelope[HealthResponse]:
+    runtime_ready = True
+    runtime_message = None
+    status = "healthy"
+
+    try:
+        importlib.import_module("mlx.core")
+    except Exception as exc:
+        runtime_ready = False
+        status = "degraded"
+        runtime_message = f"MLX runtime unavailable: {exc}"
+
+    return ApiEnvelope(
+        ok=True,
+        data=HealthResponse(
+            status=status,
+            version="0.1.0",
+            runtimeReady=runtime_ready,
+            runtimeMessage=runtime_message,
+        ),
+    )
 
 
 @router.get("/system/status")
 def system_status() -> ApiEnvelope[SystemStatus]:
-    return ApiEnvelope(ok=True, data=get_system_status(store.load()))
+    status = get_system_status(store.load())
+    status.activeJobs = job_manager.active_count()
+    return ApiEnvelope(ok=True, data=status)
 
 
 @router.get("/runtime/summary")

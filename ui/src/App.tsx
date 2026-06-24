@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
-import { NavRail, StatusBar } from "./components";
+import { JobPanel, NavRail, StatusBar } from "./components";
 import { api } from "./lib/api";
 import {
   Config,
@@ -16,24 +16,59 @@ import {
   Upscaler
 } from "./pages";
 import { useAppStore } from "./stores/useAppStore";
+import { useJobStore } from "./stores/useJobStore";
 
 export default function App() {
   const location = useLocation();
   const setActiveRoute = useAppStore((state) => state.setActiveRoute);
   const setSystemStatus = useAppStore((state) => state.setSystemStatus);
+  const setBackendOnline = useAppStore((state) => state.setBackendOnline);
+  const loadJobs = useJobStore((state) => state.loadJobs);
 
   useEffect(() => {
     setActiveRoute(location.pathname);
   }, [location.pathname, setActiveRoute]);
 
   useEffect(() => {
-    api.systemStatus().then(setSystemStatus).catch(() => undefined);
-  }, [setSystemStatus]);
+    let cancelled = false;
+
+    Promise.allSettled([api.health(), api.systemStatus()]).then(([healthResult, statusResult]) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (statusResult.status === "fulfilled") {
+        setSystemStatus(statusResult.value);
+      } else {
+        setSystemStatus(null);
+      }
+
+      if (healthResult.status === "fulfilled") {
+        setBackendOnline(healthResult.value.runtimeReady);
+        return;
+      }
+
+      setBackendOnline(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setBackendOnline, setSystemStatus]);
+
+  useEffect(() => {
+    void loadJobs(false);
+    const timer = window.setInterval(() => {
+      void loadJobs(false);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [loadJobs]);
 
   return (
     <>
       <NavRail />
       <StatusBar />
+      <JobPanel />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/txt2img" element={<Txt2Img />} />

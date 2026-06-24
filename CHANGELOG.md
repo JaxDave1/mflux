@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### MFLUX Neural Interface v0.2 (2026-06-24)
+
+**Gallery (8A)**
+- Favorites filter, star badges, toggle on Output Details, `localStorage` persistence with prune-on-delete.
+- Multi-select on `ImageGrid` (shift/cmd-click, checkboxes), bulk delete and reveal-in-Finder.
+- Metadata sidecar viewer (`GET /api/gallery/{id}/sidecar`) with pretty-print and copy.
+- Gallery pagination (`GalleryPager`, 12 images per page).
+
+**Generation parity (8B)**
+- LoRA stack on Img2Img, Inpaint, Kontext, and ControlNet (`useModuleLoraStack`, `LoraModelNotice`).
+- Live preview toggle on all generation modules (`LivePreviewField`, `useModuleLivePreviewSetting`).
+- Backend stepwise wiring for img2img, inpaint, kontext, and controlnet (`STEPWISE_MODULES`).
+
+**Models cache (8C)**
+- `DELETE /api/models/cache/{id}` with HF hub and MFLUX cache root containment checks.
+- Delete-from-cache button on cached built-in model cards with confirmation modal.
+- `civitai_download` job module; CivitAI panel on Models CUSTOM/LoRA filters.
+- CivitAI token injected from vault (`civitai` key).
+
+**Export (8D)**
+- `model_export` job wrapping `mflux-save` for cached exportable built-ins.
+- Quantized export controls on Models page (quantize setting + per-card export button).
+
+**Scheduler & quantize UX**
+- Model-aware scheduler options (`SchedulerField`); incompatible schedulers disabled, not hidden.
+- Quantize UI limited to 8/OFF across generation modules (`QuantizeField`).
+
+**Validation**
+- `scripts/v0_2_signoff.py` — Phase 8 sign-off suite (14 PASS, 2026-06-24).
+- `scripts/validation_pass.py` — 22/22 PASS (2026-06-24 re-run).
+- `scripts/smoke_test_neural_interface.py` — 32/32 PASS.
+
+### MFLUX Neural Interface v0.1
+
+- **Gallery previews**: Return browser-safe `/api/gallery/file` thumbnail URLs from generation endpoints so Dashboard, Gallery, and module result panels render outputs outside the developer's local filesystem context.
+- **API-driven model pickers**: Generation modules and Config default-model dropdowns now load from `/api/models` with per-module allowlists and downloaded-first ordering (`useModuleModelOptions`, `lib/moduleModelOptions.ts`).
+- **v0.1 validation expansion**: `scripts/validation_pass.py` checks the module model registry and runs minimal E2E jobs for each locally cached allowlisted model.
+- **FLUX.2 Klein guidance**: Distilled `flux2-klein-4b` / `flux2-klein-9b` jobs omit `--guidance`; defaults registry updated accordingly.
+
+---
+
 ## [0.17.4] - 2026-03-28
 
 ### 🐛 Bug Fixes

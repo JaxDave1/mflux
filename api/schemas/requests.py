@@ -1,6 +1,11 @@
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+class LoraSelection(BaseModel):
+    path: str = Field(min_length=1)
+    strength: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
 class Txt2ImgRequest(BaseModel):
@@ -11,13 +16,25 @@ class Txt2ImgRequest(BaseModel):
     width: int = Field(default=1024, ge=256, le=2048)
     height: int = Field(default=1024, ge=256, le=2048)
     steps: int = Field(default=25, ge=1, le=100)
-    guidance: float = Field(default=3.5, gt=0)
+    guidance: float | None = Field(default=3.5, ge=0)
     scheduler: str = "linear"
-    seed: int | None = None
+    seed: int | list[int] | None = None
+    autoSeeds: int | None = Field(default=None, ge=1, le=128)
     output: str | None = None
     metadata: bool = True
+    lowRam: bool = False
+    livePreview: bool = False
+    stepwiseOutputDir: str | None = None
+    loras: list[LoraSelection] = Field(default_factory=list)
     loraPaths: list[str] = Field(default_factory=list)
     loraScales: list[float] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def sync_lora_fields(self) -> "Txt2ImgRequest":
+        if self.loras:
+            self.loraPaths = [lora.path for lora in self.loras]
+            self.loraScales = [lora.strength for lora in self.loras]
+        return self
 
 
 class Img2ImgRequest(BaseModel):
@@ -35,6 +52,8 @@ class Img2ImgRequest(BaseModel):
     metadata: bool = True
     imagePath: str = Field(min_length=1)
     imageStrength: float = Field(default=0.75, ge=0.0, le=1.0)
+    livePreview: bool = False
+    stepwiseOutputDir: str | None = None
     loraPaths: list[str] = Field(default_factory=list)
     loraScales: list[float] = Field(default_factory=list)
 
@@ -53,6 +72,8 @@ class InpaintRequest(BaseModel):
     metadata: bool = True
     imagePath: str = Field(min_length=1)
     maskedImagePath: str = Field(min_length=1)
+    livePreview: bool = False
+    stepwiseOutputDir: str | None = None
     loraPaths: list[str] = Field(default_factory=list)
     loraScales: list[float] = Field(default_factory=list)
 
@@ -70,6 +91,8 @@ class KontextRequest(BaseModel):
     output: str | None = None
     metadata: bool = True
     imagePath: str = Field(min_length=1)
+    livePreview: bool = False
+    stepwiseOutputDir: str | None = None
     loraPaths: list[str] = Field(default_factory=list)
     loraScales: list[float] = Field(default_factory=list)
 
@@ -89,6 +112,8 @@ class ControlNetRequest(BaseModel):
     controlnetImagePath: str = Field(min_length=1)
     controlnetStrength: float = Field(default=0.4, ge=0.0, le=1.0)
     controlnetSaveCanny: bool = False
+    livePreview: bool = False
+    stepwiseOutputDir: str | None = None
     loraPaths: list[str] = Field(default_factory=list)
     loraScales: list[float] = Field(default_factory=list)
 
@@ -110,6 +135,45 @@ class DepthProRequest(BaseModel):
     output: str | None = None
 
 
+class ModelDownloadRequest(BaseModel):
+    model_name: str = Field(min_length=1)
+    base_model: str | None = None
+
+
+class ModelExportRequest(BaseModel):
+    model_name: str = Field(min_length=1)
+    quantize: int = Field(default=8, ge=3, le=8)
+    output: str | None = None
+
+
+class CivitaiDownloadRequest(BaseModel):
+    modelVersionId: int | None = Field(default=None, ge=1)
+    downloadUrl: str | None = None
+    destination: Literal["lora", "custom"] = "lora"
+
+    @model_validator(mode="after")
+    def require_source(self) -> "CivitaiDownloadRequest":
+        if self.modelVersionId is None and not (self.downloadUrl and self.downloadUrl.strip()):
+            raise ValueError("modelVersionId or downloadUrl is required")
+        return self
+
+
+class JobCreateRequest(BaseModel):
+    module: Literal[
+        "txt2img",
+        "img2img",
+        "inpaint",
+        "controlnet",
+        "kontext",
+        "upscaler",
+        "depth_pro",
+        "model_download",
+        "civitai_download",
+        "model_export",
+    ]
+    params: dict[str, Any]
+
+
 class PathsConfig(BaseModel):
     hfHome: str
     modelDir: str
@@ -124,6 +188,7 @@ class GenerationConfig(BaseModel):
     outputFormat: Literal["png", "jpg", "jpeg", "webp"]
     quality: int
     autoSeeds: bool
+    saveMetadataSidecar: bool = True
 
 
 class SystemConfig(BaseModel):

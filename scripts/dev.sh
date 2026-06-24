@@ -2,8 +2,31 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-API_PORT="${API_PORT:-8188}"
+API_PORT="${API_PORT:-8189}"
 UI_PORT="${UI_PORT:-4173}"
+PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
+
+if [[ ! -x "${PYTHON_BIN}" ]]; then
+  PYTHON_BIN="python3"
+fi
+
+ensure_api_runtime() {
+  if "$PYTHON_BIN" -c "import uvicorn, fastapi, multipart" >/dev/null 2>&1; then
+    return
+  fi
+
+  cat >&2 <<EOF
+Backend runtime dependencies are missing for ${PYTHON_BIN}.
+
+Bootstrap the repo environment with:
+  cd "${ROOT_DIR}"
+  uv pip install --python "${ROOT_DIR}/.venv/bin/python" -e . -r api/requirements.txt
+
+Then rerun:
+  ./scripts/dev.sh
+EOF
+  exit 1
+}
 
 cleanup() {
   if [[ -n "${API_PID:-}" ]]; then kill "$API_PID" >/dev/null 2>&1 || true; fi
@@ -12,7 +35,8 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$ROOT_DIR"
-PYTHONPATH="$ROOT_DIR/src" python3 -m uvicorn api.main:app --reload --port "$API_PORT" &
+ensure_api_runtime
+PYTHONPATH="$ROOT_DIR/src" "$PYTHON_BIN" -m uvicorn api.main:app --reload --port "$API_PORT" &
 API_PID=$!
 
 cd "$ROOT_DIR/ui"

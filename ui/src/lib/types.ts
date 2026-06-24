@@ -8,6 +8,13 @@ export interface Envelope<T> {
   };
 }
 
+export interface HealthResponse {
+  status: "healthy" | "degraded";
+  version: string;
+  runtimeReady: boolean;
+  runtimeMessage?: string | null;
+}
+
 export interface SystemStatus {
   platform: string;
   memory: { used: number; total: number; unit: string };
@@ -50,6 +57,9 @@ export interface ModelSummary {
     detectedFiles?: number;
     cached?: boolean;
     downloadable?: boolean;
+    exportable?: boolean;
+    loraArchitecture?: string | null;
+    loraCompat?: "compatible" | "unknown" | "incompatible";
   };
 }
 
@@ -66,6 +76,38 @@ export interface ModelsResponse {
   };
 }
 
+export interface CacheDeleteResponse {
+  id: string;
+  deleted_paths: string[];
+}
+
+export interface ModelDefaultsResponse {
+  steps: number | null;
+  guidance: number | null;
+  quantize: number | null;
+  scheduler: string;
+  supports_negative_prompt: boolean;
+}
+
+export interface ModuleDefaultsResponse extends ModelDefaultsResponse {
+  model: string;
+  width: number;
+  height: number;
+}
+
+export interface SecretStatus {
+  key: "hf" | "civitai";
+  is_set: boolean;
+}
+
+export interface SecretsResponse {
+  tokens: SecretStatus[];
+}
+
+export interface TempUploadResponse {
+  path: string;
+}
+
 export interface AppConfig {
   paths: {
     hfHome: string;
@@ -80,6 +122,7 @@ export interface AppConfig {
     outputFormat: string;
     quality: number;
     autoSeeds: boolean;
+    saveMetadataSidecar: boolean;
   };
   system: {
     cacheLimit: number;
@@ -91,6 +134,57 @@ export interface AppConfig {
     port: number;
     autoOpenBrowser: boolean;
   };
+}
+
+export type ModuleName =
+  | "txt2img"
+  | "img2img"
+  | "inpaint"
+  | "controlnet"
+  | "kontext"
+  | "upscaler"
+  | "depth_pro"
+  | "model_download"
+  | "civitai_download"
+  | "model_export";
+
+export type JobState = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "timed_out";
+
+export interface JobProgress {
+  step: number | null;
+  total_steps: number | null;
+  percent: number | null;
+  elapsed_ms: number;
+  eta_ms: number | null;
+  source: "step_parser" | "baseline" | "indeterminate";
+  last_stdout_line: string | null;
+}
+
+export interface JobOutput {
+  output_path: string;
+  output_url: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface JobError {
+  type: string;
+  message: string;
+  exit_code: number | null;
+  stderr_tail: string | null;
+}
+
+export interface Job {
+  id: string;
+  module: ModuleName;
+  state: JobState;
+  command: string[];
+  params: Record<string, unknown>;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  progress: JobProgress;
+  output: JobOutput | null;
+  error: JobError | null;
 }
 
 export interface GenerationJob {
@@ -129,6 +223,21 @@ export interface GalleryResponse {
   items: GenerationOutput[];
 }
 
+export interface GalleryDeleteResponse {
+  deleted_path: string;
+  metadata_deleted: boolean;
+}
+
+export interface GalleryRevealResponse {
+  status: string;
+}
+
+export interface GallerySidecarResponse {
+  filename: string;
+  path: string;
+  content: unknown;
+}
+
 export interface Txt2ImgRequest {
   prompt: string;
   negativePrompt?: string;
@@ -137,13 +246,15 @@ export interface Txt2ImgRequest {
   width: number;
   height: number;
   steps: number;
-  guidance: number;
+  guidance: number | null;
   scheduler: string;
-  seed?: number | null;
+  seed?: number | number[] | null;
+  autoSeeds?: number | null;
   output?: string | null;
   metadata?: boolean;
-  loraPaths?: string[];
-  loraScales?: number[];
+  lowRam?: boolean;
+  livePreview?: boolean;
+  loras?: Array<{ path: string; strength: number }>;
 }
 
 export interface Txt2ImgResponse {
@@ -185,4 +296,30 @@ export interface DepthProRequest {
 export interface SingleOutputResponse {
   job: GenerationJob;
   output: GenerationOutput;
+}
+
+export interface JobCreateRequest {
+  module: ModuleName;
+  params: Record<string, unknown>;
+}
+
+export interface JobsListResponse {
+  jobs: Job[];
+}
+
+export interface JobBaselinesResponse {
+  baselines: Record<ModuleName, { median_ms: number; p90_ms: number; samples: number }>;
+}
+
+export interface LoraSummary {
+  path: string;
+  name: string;
+  trigger_words?: string[] | null;
+  size_mb: number;
+  architecture: string;
+  compat: "compatible" | "unknown" | "incompatible";
+}
+
+export interface LorasResponse {
+  loras: LoraSummary[];
 }

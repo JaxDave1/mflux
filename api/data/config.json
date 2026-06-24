@@ -1,9 +1,9 @@
 {
   "paths": {
     "hfHome": "~/.cache/huggingface",
-    "modelDir": "./.mflux-cache",
-    "outputDir": "./outputs",
-    "loraDir": "./.mflux-cache/loras"
+    "modelDir": "/Volumes/AI_HQ/Invoke-AI/models",
+    "outputDir": "/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/outputs",
+    "loraDir": "/Volumes/AI_HQ/Invoke-AI/models"
   },
   "generation": {
     "defaultModel": "z-image-turbo",
@@ -11,7 +11,8 @@
     "defaultSteps": 9,
     "outputFormat": "png",
     "quality": 95,
-    "autoSeeds": true
+    "autoSeeds": true,
+    "saveMetadataSidecar": true
   },
   "system": {
     "cacheLimit": 8,
@@ -20,7 +21,7 @@
   },
   "backend": {
     "serverUrl": "127.0.0.1",
-    "port": 8188,
+    "port": 8189,
     "autoOpenBrowser": true
   }
 }

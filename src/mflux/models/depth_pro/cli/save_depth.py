@@ -14,9 +14,10 @@ def main():
     depth_pro = DepthPro(quantize=args.quantize)
     depth_result = depth_pro.create_depth_map(image_path=args.image_path)
 
-    # 2. Save the depth map with the same name + _depth suffix
+    # 2. Save the depth map beside the source image or to --output when provided
     image_path = Path(args.image_path)
-    output_path = image_path.with_stem(f"{image_path.stem}_depth").with_suffix(".png")
+    output_path = Path(args.output) if args.output else image_path.with_stem(f"{image_path.stem}_depth").with_suffix(".png")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     depth_result.depth_image.save(output_path)
     print(f"Depth map saved to: {output_path}")
 

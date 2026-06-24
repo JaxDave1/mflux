@@ -23,20 +23,18 @@ export function ModulePage({
                 {section.toUpperCase()}
               </div>
               <div className="mt-2 text-sm text-on-surface-variant">
-                This module is scaffolded and awaiting backend binding against the audited MFLUX
-                capability matrix.
+                This section is reserved for the next integration pass.
               </div>
             </div>
           ))}
         </Panel>
         <Panel title="IMPLEMENTATION STATUS" neonBorder="secondary" className="space-y-4">
           <div className="rounded-panel border border-secondary/30 bg-secondary/5 px-4 py-4 text-sm text-on-surface">
-            Route and shared shell are live. Backend integration for this module remains gated on
-            CLI audit completion and request/response validation.
+            Route and shared interface are live. Backend integration for this module is still
+            pending.
           </div>
           <div className="text-sm leading-6 text-on-surface-variant">
-            The UI is using the unified nav rail, status bar, surface tokens, and component recipes
-            from the Claude baseline plus the Stitch exports.
+            The screen already uses the shared shell, status bar, and Mirror Blue surface system.
           </div>
         </Panel>
       </div>

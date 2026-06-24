@@ -1,26 +1,29 @@
 import { NavLink } from "react-router-dom";
+import { Icon } from "./Icon";
 
 const navItems = [
-  { path: "/", label: "HOME", icon: "home" },
-  { path: "/txt2img", label: "TXT2IMG", icon: "edit_note" },
-  { path: "/img2img", label: "IMG2IMG", icon: "image" },
-  { path: "/inpaint", label: "INPAINT", icon: "brush" },
-  { path: "/controlnet", label: "CONTROLNET", icon: "settings_input_component" },
-  { path: "/kontext", label: "KONTEXT", icon: "hub" },
-  { path: "/upscaler", label: "UPSCALER", icon: "zoom_out_map" },
-  { path: "/depth-pro", label: "DEPTH PRO", icon: "layers" },
-  { path: "/models", label: "MODELS", icon: "view_in_ar" },
-  { path: "/gallery", label: "GALLERY", icon: "grid_view" },
-  { path: "/config", label: "CONFIG", icon: "settings" }
+  { path: "/", label: "Home", icon: "home" },
+  { path: "/txt2img", label: "Txt2Img", icon: "edit_note" },
+  { path: "/img2img", label: "Img2Img", icon: "image" },
+  { path: "/inpaint", label: "Inpaint", icon: "brush" },
+  { path: "/controlnet", label: "ControlNet", icon: "settings_input_component" },
+  { path: "/kontext", label: "Kontext", icon: "hub" },
+  { path: "/upscaler", label: "Upscaler", icon: "zoom_out_map" },
+  { path: "/depth-pro", label: "Depth Pro", icon: "layers" },
+  { path: "/models", label: "Models", icon: "view_in_ar" },
+  { path: "/gallery", label: "Gallery", icon: "grid_view" },
+  { path: "/config", label: "Config", icon: "settings" }
 ];
 
 export function NavRail({ className = "" }: { className?: string }) {
   return (
     <nav
-      className={`scanline fixed left-0 top-0 z-40 flex h-screen w-rail flex-col border-r border-primary/30 bg-background py-4 ${className}`}
+      className={`titanium-rail fixed left-0 top-0 z-40 flex h-screen w-rail flex-col py-4 ${className}`}
     >
       <div className="mb-8 flex items-center justify-center">
-        <div className="font-headline text-xl font-bold text-primary neon-text-primary">M</div>
+        <div className="titanium-text flex h-10 w-10 items-center justify-center rounded-xl border border-metal-titanium-light/20 bg-[linear-gradient(180deg,rgba(18,40,74,0.96),rgba(9,22,44,0.96))] font-headline text-base font-semibold shadow-[inset_0_1px_0_rgba(243,247,251,0.18),0_0_14px_rgba(0,212,200,0.08)]">
+          M
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-1">
         {navItems.map((item) => (
@@ -30,22 +33,17 @@ export function NavRail({ className = "" }: { className?: string }) {
             end={item.path === "/"}
             className={({ isActive }) =>
               [
-                "group flex flex-col items-center justify-center py-3 transition duration-150",
+                "group mx-2 flex flex-col items-center justify-center rounded-xl border px-2 py-3 transition duration-150",
                 isActive
-                  ? "scale-105 border-r-2 border-primary bg-primary/8 text-primary"
-                  : "text-on-surface-variant/70 hover:bg-primary/8 hover:text-secondary"
+                  ? "nav-item-active border-secondary/30 text-white"
+                  : "border border-transparent text-on-surface-variant/72 hover:border-outline/18 hover:bg-white/[0.03] hover:text-metal-titanium-light"
               ].join(" ")
             }
           >
             {({ isActive }) => (
               <>
-                <span
-                  className="material-symbols-outlined mb-1 text-[20px]"
-                  style={{ fontVariationSettings: `'FILL' ${isActive ? 1 : 0}` }}
-                >
-                  {item.icon}
-                </span>
-                <span className="font-label text-[8px] tracking-[0.22em]">{item.label}</span>
+                <Icon className="mb-1 text-[20px]" name={item.icon} />
+                <span className="font-label text-[8px] tracking-[0.12em]">{item.label}</span>
               </>
             )}
           </NavLink>
