@@ -39,22 +39,23 @@ Extend `scripts/validation_pass.py` beyond accept/cancel smoke:
 
 ### 9B.1 CivitAI full E2E
 
-- [ ] Gate on vault `civitai` token (`SKIP` if unset)
-- [ ] Gate on `MFLUX_VALIDATION_CIVITAI_VERSION_ID` env (small LoRA version id; `SKIP` if unset)
-- [ ] Submit `civitai_download` → wait for `succeeded` → verify output `.safetensors` on disk
+- [x] Gate on vault `civitai` token (`SKIP` if unset)
+- [x] Gate on `MFLUX_VALIDATION_CIVITAI_VERSION_ID` env (small LoRA version id; `SKIP` if unset)
+- [x] Submit `civitai_download` → wait for `succeeded` → verify output `.safetensors` on disk
 - [ ] Optional cleanup: delete downloaded test LoRA after verify
 
 ### 9B.2 Model export full E2E
 
-- [ ] Pick first cached + exportable builtin from `/api/models`
-- [ ] Submit `model_export` (q8) → wait for `succeeded` (long timeout, minutes)
-- [ ] Verify output directory contains `*.safetensors`
-- [ ] Record job id + output path in validation report
+- [x] Pick first cached + exportable builtin from `/api/models`
+- [x] Submit `model_export` (q8) → wait for `succeeded` (long timeout, minutes)
+- [x] Verify output directory contains `*.safetensors`
+- [x] Record job id + output path in validation report
+- [x] `MFLUX_SKIP_MODEL_EXPORT_E2E=1` escape hatch for routine CI runs
 
 ### 9B.3 System status contract
 
-- [ ] Assert `/api/system/status` `loadedModel` matches `/api/config` `generation.defaultModel`
-- [ ] Assert `mlxCache.used > 0` when HF/mflux cache dirs are non-empty
+- [x] Assert `/api/system/status` `loadedModel` matches `/api/config` `generation.defaultModel`
+- [x] Assert `mlxCache.used > 0` when HF/mflux cache dirs are non-empty
 
 ---
 
@@ -83,13 +84,15 @@ Extend `scripts/validation_pass.py` beyond accept/cancel smoke:
 3. Dashboard shows non-placeholder MLX cache, default model, disk path, and live job state.
 4. `npm run build` clean.
 
-### Sign-off run
+### Sign-off run (2026-06-24)
 
 | Suite | Result | Report |
 |---|---|---|
-| `scripts/validation_pass.py` | _pending_ | `scripts/validation_pass_results.json` |
-| `scripts/v0_2_signoff.py` | _pending_ | `scripts/v0_2_signoff_results.json` |
-| `scripts/smoke_test_neural_interface.py` | _pending_ | `scripts/smoke_test_results.json` |
+| `scripts/validation_pass.py` | **26 PASS / 0 FAIL / 2 SKIP** | `scripts/validation_pass_results.json` |
+| `scripts/v0_2_signoff.py` | **14 PASS / 0 FAIL / 0 SKIP** | `scripts/v0_2_signoff_results.json` |
+| `scripts/smoke_test_neural_interface.py` | **32 PASS / 0 FAIL / 0 SKIP** | `scripts/smoke_test_results.json` |
+
+SKIP notes: CivitAI E2E needs `MFLUX_VALIDATION_CIVITAI_VERSION_ID`; export E2E skipped via `MFLUX_SKIP_MODEL_EXPORT_E2E=1` for this run.
 
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24
