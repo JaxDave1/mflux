@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Gallery delete hardening**
+- Added `DELETE /api/gallery` batch delete with an `ids[]` body and per-item `deleted` / `failed` results.
+- Gallery bulk-delete UI now uses the batch endpoint instead of looping over single-item deletes.
+- Added focused pytest coverage for batch delete success and stale/missing IDs.
+- Extended `smoke_test_neural_interface.py` with direct batch delete coverage and reordered the SSE smoke check to avoid blocking on a running job stream.
+
 ## [neural-interface-v0.4] - 2026-06-29
 
 **PNG output enforcement (11A)**

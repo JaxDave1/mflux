@@ -223,6 +223,24 @@ class GalleryResponse(BaseModel):
     items: list[GenerationOutput]
 
 
+class GalleryDeletedItem(BaseModel):
+    id: str
+    deleted_path: str
+    metadata_deleted: bool = False
+
+
+class GalleryDeleteFailure(BaseModel):
+    id: str
+    code: str
+    message: str
+    details: str | None = None
+
+
+class GalleryBatchDeleteResponse(BaseModel):
+    deleted: list[GalleryDeletedItem]
+    failed: list[GalleryDeleteFailure]
+
+
 class GallerySidecarResponse(BaseModel):
     filename: str
     path: str

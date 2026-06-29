@@ -230,6 +230,24 @@ export interface GalleryDeleteResponse {
   metadata_deleted: boolean;
 }
 
+export interface GalleryDeletedItem {
+  id: string;
+  deleted_path: string;
+  metadata_deleted: boolean;
+}
+
+export interface GalleryDeleteFailure {
+  id: string;
+  code: string;
+  message: string;
+  details?: string | null;
+}
+
+export interface GalleryBatchDeleteResponse {
+  deleted: GalleryDeletedItem[];
+  failed: GalleryDeleteFailure[];
+}
+
 export interface GalleryRevealResponse {
   status: string;
 }

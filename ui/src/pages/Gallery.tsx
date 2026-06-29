@@ -152,19 +152,12 @@ export function Gallery() {
     setError(null);
     setNotice(null);
     try {
-      const deletedIds = new Set<string>();
-      const failures: string[] = [];
-      for (const item of targets) {
-        try {
-          await api.deleteGalleryItem(item.id);
-          deletedIds.add(item.id);
-        } catch {
-          failures.push(item.id);
-        }
-      }
+      const response = await api.deleteGalleryItems(targets.map((item) => item.id));
+      const deletedIds = new Set(response.deleted.map((item) => item.id));
+      const failures = response.failed;
 
       if (!deletedIds.size) {
-        throw new Error("Failed to delete selected outputs");
+        throw new Error(failures[0]?.message ?? "Failed to delete selected outputs");
       }
 
       let nextFavorites = favoriteIds;
@@ -198,7 +191,7 @@ export function Gallery() {
 
       if (failures.length) {
         setNotice(`Deleted ${deletedIds.size} output(s). ${failures.length} failed.`);
-        setError(failures[0]);
+        setError(failures[0]?.message ?? failures[0]?.id ?? "Delete failed");
       } else {
         setNotice(
           deletedIds.size === 1 ? "Output deleted from disk." : `Deleted ${deletedIds.size} outputs from disk.`

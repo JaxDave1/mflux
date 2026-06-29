@@ -7,7 +7,17 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 
-from api.schemas.responses import ApiEnvelope, ApiError, GalleryResponse, GallerySidecarResponse, GenerationOutput
+from api.schemas.requests import GalleryBatchDeleteRequest
+from api.schemas.responses import (
+    ApiEnvelope,
+    ApiError,
+    GalleryBatchDeleteResponse,
+    GalleryDeleteFailure,
+    GalleryDeletedItem,
+    GalleryResponse,
+    GallerySidecarResponse,
+    GenerationOutput,
+)
 from api.services.config_store import ConfigStore
 from api.services.mflux_cli import _resolve_path
 
@@ -167,6 +177,17 @@ def _metadata_sidecars(path: Path) -> list[Path]:
     return [path.with_suffix(".metadata.json"), path.with_suffix(".json")]
 
 
+def _delete_gallery_target(target: Path) -> tuple[str, bool]:
+    deleted_path = str(target)
+    metadata_deleted = False
+    for sidecar in _metadata_sidecars(target):
+        if sidecar.exists():
+            sidecar.unlink()
+            metadata_deleted = True
+    target.unlink()
+    return deleted_path, metadata_deleted
+
+
 def _read_sidecar_raw(path: Path) -> object:
     return json.loads(path.read_text())
 
@@ -243,6 +264,48 @@ def get_gallery_sidecar(item_id: str):
     return _error_envelope(404, "sidecar_not_found", "No JSON metadata sidecar found for gallery item", item_id)
 
 
+@router.delete("/gallery")
+def delete_gallery_items(request: GalleryBatchDeleteRequest) -> ApiEnvelope[GalleryBatchDeleteResponse]:
+    deleted: list[GalleryDeletedItem] = []
+    failed: list[GalleryDeleteFailure] = []
+    seen: set[str] = set()
+
+    for item_id in request.ids:
+        if item_id in seen:
+            continue
+        seen.add(item_id)
+        try:
+            target = _safe_gallery_item_path(item_id)
+        except HTTPException as exc:
+            code = "path_outside_output_dir" if exc.status_code == 400 else "not_found"
+            failed.append(
+                GalleryDeleteFailure(
+                    id=item_id,
+                    code=code,
+                    message=str(exc.detail),
+                    details=item_id,
+                )
+            )
+            continue
+
+        try:
+            deleted_path, metadata_deleted = _delete_gallery_target(target)
+        except OSError as exc:
+            failed.append(
+                GalleryDeleteFailure(
+                    id=item_id,
+                    code="delete_failed",
+                    message="Failed to delete gallery item",
+                    details=str(exc),
+                )
+            )
+            continue
+
+        deleted.append(GalleryDeletedItem(id=item_id, deleted_path=deleted_path, metadata_deleted=metadata_deleted))
+
+    return ApiEnvelope(ok=True, data=GalleryBatchDeleteResponse(deleted=deleted, failed=failed))
+
+
 @router.delete("/gallery/{item_id:path}")
 def delete_gallery_item(item_id: str):
     try:
@@ -251,14 +314,8 @@ def delete_gallery_item(item_id: str):
         code = "path_outside_output_dir" if exc.status_code == 400 else "not_found"
         return _error_envelope(exc.status_code, code, str(exc.detail), item_id)
 
-    deleted_path = str(target)
-    metadata_deleted = False
     try:
-        for sidecar in _metadata_sidecars(target):
-            if sidecar.exists():
-                sidecar.unlink()
-                metadata_deleted = True
-        target.unlink()
+        deleted_path, metadata_deleted = _delete_gallery_target(target)
     except OSError as exc:
         return _error_envelope(500, "delete_failed", "Failed to delete gallery item", str(exc))
 

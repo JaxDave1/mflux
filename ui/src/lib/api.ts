@@ -1,6 +1,7 @@
 import type {
   AppConfig,
   Envelope,
+  GalleryBatchDeleteResponse,
   GalleryResponse,
   GalleryDeleteResponse,
   GalleryRevealResponse,
@@ -99,6 +100,11 @@ export const api = {
     });
   },
   gallery: () => request<GalleryResponse>("/api/gallery"),
+  deleteGalleryItems: (ids: string[]) =>
+    request<GalleryBatchDeleteResponse>("/api/gallery", {
+      method: "DELETE",
+      body: JSON.stringify({ ids })
+    }),
   deleteGalleryItem: (id: string) =>
     request<GalleryDeleteResponse>(`/api/gallery/${encodeURIComponent(id)}`, {
       method: "DELETE"

@@ -170,6 +170,24 @@ def main() -> int:
     else:
         record("Gallery delete removes image and sidecar", "FAIL", f"png={smoke_png.exists()} meta={smoke_meta.exists()}")
 
+    batch_ids = [f"{smoke_id}_batch_a", f"{smoke_id}_batch_b"]
+    batch_paths = []
+    for batch_id in batch_ids:
+        batch_png = output_dir / f"{batch_id}.png"
+        batch_meta = output_dir / f"{batch_id}.metadata.json"
+        batch_png.write_bytes(png_bytes)
+        batch_meta.write_text(json.dumps({"prompt": "batch smoke test", "model": "z-image-turbo"}))
+        batch_paths.append((batch_png, batch_meta))
+    batch_delete_data = expect_ok(
+        client.request("DELETE", "/api/gallery", json={"ids": batch_ids}),
+        "DELETE /api/gallery batch",
+    )
+    if batch_delete_data and all(not png.exists() and not meta.exists() for png, meta in batch_paths):
+        record("Gallery batch delete removes images and sidecars", "PASS")
+    else:
+        detail = ", ".join(f"{png.name}=({png.exists()},{meta.exists()})" for png, meta in batch_paths)
+        record("Gallery batch delete removes images and sidecars", "FAIL", detail)
+
     reveal_png = output_dir / f"{smoke_id}_reveal.png"
     reveal_png.write_bytes(png_bytes)
     if sys.platform == "darwin":
@@ -210,11 +228,6 @@ def main() -> int:
     if txt2img_data:
         job_id = txt2img_data["id"]
         time.sleep(0.5)
-        stream = client.get(f"/api/jobs/{job_id}/stream")
-        if stream.status_code == 200 and "text/event-stream" in stream.headers.get("content-type", ""):
-            record("GET /api/jobs/{id}/stream SSE", "PASS")
-        else:
-            record("GET /api/jobs/{id}/stream SSE", "FAIL", f"HTTP {stream.status_code}")
         cancel = client.delete(f"/api/jobs/{job_id}")
         if cancel.status_code == 200:
             record("DELETE /api/jobs/{id} cancel", "PASS")
@@ -227,6 +240,11 @@ def main() -> int:
                 record("DELETE /api/jobs/{id} cancel", "FAIL", cancel.text[:240])
         else:
             record("DELETE /api/jobs/{id} cancel", "FAIL", cancel.text[:240])
+        stream = client.get(f"/api/jobs/{job_id}/stream")
+        if stream.status_code == 200 and "text/event-stream" in stream.headers.get("content-type", ""):
+            record("GET /api/jobs/{id}/stream SSE", "PASS")
+        else:
+            record("GET /api/jobs/{id}/stream SSE", "FAIL", f"HTTP {stream.status_code}")
 
     missing_lora = client.post(
         "/api/jobs",

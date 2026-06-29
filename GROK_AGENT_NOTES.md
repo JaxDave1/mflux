@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-06-29 after Phase 11 v0.4 validation.
+Living reference for AI agents working on this repo. Updated 2026-06-29 after post-v0.4 Gallery batch delete validation.
 
 ---
 
@@ -12,6 +12,7 @@ Living reference for AI agents working on this repo. Updated 2026-06-29 after Ph
 | **Branch** | `codex/workspace-cleanup-snapshot` |
 | **Latest tag** | `neural-interface-v0.4` |
 | **Latest validated phase** | Phase 11 — PNG output + gallery multi-delete UX |
+| **Latest local hardening** | Gallery batch delete API + browser smoke |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -45,6 +46,11 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 - **PNG output:** all generation outputs forced to `.png`; config format selector removed
 - **Gallery UX:** always-visible checkboxes, SELECT PAGE, bulk delete toolbar; removed BROWSE/SELECT toggle
 
+### Post-v0.4 local hardening
+- **Gallery API:** `DELETE /api/gallery` accepts `ids[]` and returns per-item `deleted` / `failed` results; single-item delete remains compatible.
+- **Gallery UI:** bulk delete toolbar now uses one batch API request while preserving existing pagination, selection, favorite, and partial-failure behavior.
+- **Validation:** browser bulk-delete smoke plus API smoke cover batch deletion; API smoke now cancels the generation job before checking SSE so the stream returns from a terminal state.
+
 ---
 
 ## 3. Key file map
@@ -70,10 +76,10 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 |---|---|---|
 | `validation_pass.py` | 32 / 0 / 0 | `scripts/validation_pass_results.json` |
 | `v0_2_signoff.py` | 15 / 0 / 0 | `scripts/v0_2_signoff_results.json` |
-| `smoke_test_neural_interface.py` | 32 / 0 / 0 | `scripts/smoke_test_results.json` |
+| `smoke_test_neural_interface.py` | 34 / 0 / 0 | `scripts/smoke_test_results.json` |
 | `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: selected 2 synthetic outputs, confirmed modal, files removed |
-| `npm run build` | PASS | post–Phase 11 |
-| `.venv/bin/python -m pytest -q -m fast` | 432 PASS / 79 deselected | Includes PNG output policy coverage |
+| `npm run build` | PASS | post batch delete API/UI |
+| `.venv/bin/python -m pytest -q -m fast` | 434 PASS / 79 deselected | Includes PNG output policy and Gallery batch delete coverage |
 | `npm run test:unit` | 5 PASS | Gallery selection helper coverage |
 
 **Sign-off side effect:** `v0_2_signoff.py` deletes HF cache for `z-image-turbo` and `flux2-klein-4b`. Re-download from Models if cards show NOT CACHED.
@@ -82,7 +88,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 5. Git state (2026-06-29)
 
-**Committed:** Phase 11 v0.4 checkpoint and release-doc refresh are local on `codex/workspace-cleanup-snapshot`.
+**Committed:** Phase 11 v0.4 checkpoint, release-doc refresh, Gallery bulk-delete browser smoke, and Gallery batch-delete API hardening are local on `codex/workspace-cleanup-snapshot`.
 
 **Push:** `git push origin codex/workspace-cleanup-snapshot --tags` failed previously (no GitHub credentials in agent environment). User must push manually.
 
@@ -103,19 +109,18 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 ### High priority
 
 1. **Push local work** — Push `codex/workspace-cleanup-snapshot` and `neural-interface-v0.4` when GitHub credentials are available.
-2. **Batch delete API** — `DELETE /api/gallery` with `ids[]` body would be faster and atomic vs sequential single deletes from the UI loop.
 
 ### Medium priority
 
-3. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
-4. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
-5. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
+2. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
+3. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
+4. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
 
 ### Low priority / corrections
 
-6. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
-7. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
-8. **Bulk delete failure UX** — Partial failures show first error ID only; consider listing all failed paths.
+5. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
+6. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
+7. **Bulk delete failure UX** — Partial failures show the first error message only; consider listing all failed paths.
 
 ---
 

@@ -174,6 +174,18 @@ class JobCreateRequest(BaseModel):
     params: dict[str, Any]
 
 
+class GalleryBatchDeleteRequest(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=500)
+
+    @field_validator("ids")
+    @classmethod
+    def _reject_blank_ids(cls, value: list[str]) -> list[str]:
+        normalized = [item_id.strip() for item_id in value]
+        if any(not item_id for item_id in normalized):
+            raise ValueError("Gallery ids must not be blank")
+        return normalized
+
+
 class PathsConfig(BaseModel):
     hfHome: str
     modelDir: str
