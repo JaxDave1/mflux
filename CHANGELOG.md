@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### MFLUX Neural Interface — post-v0.3 session (2026-06-24)
+## [neural-interface-v0.4] - 2026-06-29
 
 **PNG output enforcement (11A)**
 - All generated image outputs use `.png` extension regardless of config or explicit output path.

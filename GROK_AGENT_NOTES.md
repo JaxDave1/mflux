@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-06-24 after Phase 11 (PNG output + gallery multi-delete UX).
+Living reference for AI agents working on this repo. Updated 2026-06-29 after Phase 11 v0.4 validation.
 
 ---
 
@@ -10,8 +10,8 @@ Living reference for AI agents working on this repo. Updated 2026-06-24 after Ph
 |---|---|
 | **Repo path** | `/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/` |
 | **Branch** | `codex/workspace-cleanup-snapshot` |
-| **Latest tag** | `neural-interface-v0.3` (on `3940960`) |
-| **Pending tag** | `neural-interface-v0.4` (Phase 11 — uncommitted) |
+| **Latest tag** | `neural-interface-v0.4` |
+| **Latest validated phase** | Phase 11 — PNG output + gallery multi-delete UX |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -41,7 +41,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 - Cancel on RunningStatePreview and Models download/export cards
 - `NEURAL_INTERFACE_RUNBOOK.md`, gallery img2img handoff cached-model fallback (`3940960`)
 
-### v0.4 session — Phase 11 (uncommitted)
+### v0.4 — `neural-interface-v0.4` (Phase 11)
 - **PNG output:** all generation outputs forced to `.png`; config format selector removed
 - **Gallery UX:** always-visible checkboxes, SELECT PAGE, bulk delete toolbar; removed BROWSE/SELECT toggle
 
@@ -64,7 +64,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ---
 
-## 4. Validation state (last full run)
+## 4. Validation state (2026-06-29)
 
 | Suite | Result | Artifact |
 |---|---|---|
@@ -75,23 +75,13 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | `.venv/bin/python -m pytest -q -m fast` | 432 PASS / 79 deselected | Includes PNG output policy coverage |
 | `npm run test:unit` | 5 PASS | Gallery selection helper coverage |
 
-**Caveat:** Live API/UI validation scripts still need a final re-run before the v0.4 tag.
-
 **Sign-off side effect:** `v0_2_signoff.py` deletes HF cache for `z-image-turbo` and `flux2-klein-4b`. Re-download from Models if cards show NOT CACHED.
 
 ---
 
-## 5. Git state (2026-06-24)
+## 5. Git state (2026-06-29)
 
-**Committed:** through `3940960` (`fix(validation): gallery img2img handoff uses cached model fallback`)
-
-**Uncommitted (Phase 11):**
-- `api/schemas/requests.py` — PNG-only `outputFormat`
-- `api/services/mflux_cli.py` — PNG path normalization
-- `ui/src/pages/Config.tsx` — removed format selector
-- `ui/src/pages/Gallery.tsx` — gallery multi-select UX
-- `ui/src/components/ImageGrid.tsx` — always-on checkboxes
-- `ui/src/lib/types.ts` — `outputFormat: "png"`
+**Committed:** Phase 11 v0.4 checkpoint and release-doc refresh are local on `codex/workspace-cleanup-snapshot`.
 
 **Push:** `git push origin codex/workspace-cleanup-snapshot --tags` failed previously (no GitHub credentials in agent environment). User must push manually.
 
@@ -111,22 +101,21 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Commit + tag v0.4** — Stage Phase 11, re-run validation, tag `neural-interface-v0.4`, push branch and tags.
-2. **Live validation refresh** — Re-run `validation_pass.py`, `v0_2_signoff.py`, and `smoke_test_neural_interface.py` with API + UI servers up.
-3. **Gallery bulk-delete E2E** — Smoke test: select 2+ synthetic gallery items, bulk delete, confirm files removed.
-4. **Batch delete API** — `DELETE /api/gallery` with `ids[]` body would be faster and atomic vs sequential single deletes from the UI loop.
+1. **Push v0.4** — Push `codex/workspace-cleanup-snapshot` and `neural-interface-v0.4` when GitHub credentials are available.
+2. **Gallery bulk-delete E2E** — Browser smoke: select 2+ synthetic gallery items, bulk delete, confirm files removed.
+3. **Batch delete API** — `DELETE /api/gallery` with `ids[]` body would be faster and atomic vs sequential single deletes from the UI loop.
 
 ### Medium priority
 
-5. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
-6. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
-7. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
+4. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
+5. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
+6. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
 
 ### Low priority / corrections
 
-8. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
-9. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
-10. **Bulk delete failure UX** — Partial failures show first error ID only; consider listing all failed paths.
+7. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
+8. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
+9. **Bulk delete failure UX** — Partial failures show first error ID only; consider listing all failed paths.
 
 ---
 
@@ -136,13 +125,11 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 ./scripts/dev.sh
 
+.venv/bin/python scripts/validation_pass.py
 .venv/bin/python scripts/smoke_test_neural_interface.py
 .venv/bin/python scripts/v0_2_signoff.py
-.venv/bin/python scripts/validation_pass.py
 cd ui && npm run build
 
-git add -A && git commit -m "feat(neural-interface): PNG output + gallery multi-delete UX (v0.4)"
-git tag -a neural-interface-v0.4 -m "MFLUX Neural Interface v0.4"
 git push origin codex/workspace-cleanup-snapshot --tags
 ```
 
@@ -159,4 +146,4 @@ git push origin codex/workspace-cleanup-snapshot --tags
 ---
 
 **Maintainer:** David Hendricks
-**Last updated by:** Grok (2026-06-24)
+**Last updated by:** Codex (2026-06-29)

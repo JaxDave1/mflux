@@ -14,6 +14,6 @@
 | `scripts/v0_2_signoff.py` | **15 PASS / 0 FAIL / 0 SKIP** | `scripts/v0_2_signoff_results.json` |
 | `scripts/smoke_test_neural_interface.py` | **32 PASS / 0 FAIL / 0 SKIP** | `scripts/smoke_test_results.json` |
 
-**Follow-on:** Phase 10 (`PHASE_10_V0_4.md`), Phase 11 (`PHASE_11_V0_4.md` — PNG output + gallery UX, uncommitted).
+**Follow-on:** Phase 10 (`PHASE_10_V0_4.md`), Phase 11 (`PHASE_11_V0_4.md` — PNG output + gallery UX).
 
 **Phase owner:** David Hendricks

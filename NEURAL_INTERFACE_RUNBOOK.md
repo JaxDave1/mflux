@@ -2,7 +2,7 @@
 
 Local UI: `http://127.0.0.1:4173/` · API: `http://127.0.0.1:8189/`
 
-**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_11_V0_4.md` (v0.4 UX, uncommitted)
+**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_11_V0_4.md` (v0.4)
 
 ## Start
 
@@ -43,7 +43,7 @@ Vault keys (Config → API Keys): `hf`, `civitai`
 | Tag | Notes |
 |---|---|
 | `neural-interface-v0.3` | Shipped on `3940960` |
-| `neural-interface-v0.4` | Phase 11 — PNG output + gallery multi-delete UX (pending commit) |
+| `neural-interface-v0.4` | Phase 11 — PNG output + gallery multi-delete UX |
 
 ```bash
 git tag -a neural-interface-v0.4 -m "MFLUX Neural Interface v0.4"

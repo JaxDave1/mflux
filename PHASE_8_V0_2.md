@@ -107,7 +107,7 @@ v0.2-specific highlights from `v0_2_signoff.py`:
 
 **Note:** Sign-off cache-delete tests remove HF hub dirs for `flux2-klein-4b` and `z-image-turbo`. Re-download from Models if those cards show NOT CACHED.
 
-**Follow-on:** Phase 9–11 — v0.3 tag `neural-interface-v0.3`; v0.4 session in `PHASE_11_V0_4.md` (uncommitted).
+**Follow-on:** Phase 9–11 — v0.3 tag `neural-interface-v0.3`; v0.4 tag `neural-interface-v0.4`.
 
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24
