@@ -25,8 +25,11 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/smoke_test_neural_interface.py
 .venv/bin/python scripts/v0_2_signoff.py
 .venv/bin/python scripts/validation_pass.py
+node scripts/gallery_bulk_delete_browser_smoke.mjs
 cd ui && npm run build
 ```
+
+`gallery_bulk_delete_browser_smoke.mjs` requires API + UI dev servers to be running and launches headless Chrome/Chromium. Set `CHROME_BIN` if Chrome is not installed in a standard location.
 
 ### Validation env vars
 

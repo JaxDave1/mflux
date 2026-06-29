@@ -58,7 +58,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | Gallery UI | `ui/src/pages/Gallery.tsx`, `ui/src/components/ImageGrid.tsx` |
 | Gallery selection helpers | `ui/src/lib/gallerySelection.ts` |
 | Config UI | `ui/src/pages/Config.tsx` |
-| Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py` |
+| Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
 | Ops | `NEURAL_INTERFACE_RUNBOOK.md` |
 | Phase orders | `PHASE_8_V0_2.md` … `PHASE_11_V0_4.md` |
 
@@ -71,6 +71,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | `validation_pass.py` | 32 / 0 / 0 | `scripts/validation_pass_results.json` |
 | `v0_2_signoff.py` | 15 / 0 / 0 | `scripts/v0_2_signoff_results.json` |
 | `smoke_test_neural_interface.py` | 32 / 0 / 0 | `scripts/smoke_test_results.json` |
+| `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: selected 2 synthetic outputs, confirmed modal, files removed |
 | `npm run build` | PASS | post–Phase 11 |
 | `.venv/bin/python -m pytest -q -m fast` | 432 PASS / 79 deselected | Includes PNG output policy coverage |
 | `npm run test:unit` | 5 PASS | Gallery selection helper coverage |
@@ -101,21 +102,20 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Push v0.4** — Push `codex/workspace-cleanup-snapshot` and `neural-interface-v0.4` when GitHub credentials are available.
-2. **Gallery bulk-delete E2E** — Browser smoke: select 2+ synthetic gallery items, bulk delete, confirm files removed.
-3. **Batch delete API** — `DELETE /api/gallery` with `ids[]` body would be faster and atomic vs sequential single deletes from the UI loop.
+1. **Push local work** — Push `codex/workspace-cleanup-snapshot` and `neural-interface-v0.4` when GitHub credentials are available.
+2. **Batch delete API** — `DELETE /api/gallery` with `ids[]` body would be faster and atomic vs sequential single deletes from the UI loop.
 
 ### Medium priority
 
-4. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
-5. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
-6. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
+3. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
+4. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
+5. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
 
 ### Low priority / corrections
 
-7. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
-8. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
-9. **Bulk delete failure UX** — Partial failures show first error ID only; consider listing all failed paths.
+6. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
+7. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
+8. **Bulk delete failure UX** — Partial failures show first error ID only; consider listing all failed paths.
 
 ---
 
@@ -128,6 +128,7 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/validation_pass.py
 .venv/bin/python scripts/smoke_test_neural_interface.py
 .venv/bin/python scripts/v0_2_signoff.py
+node scripts/gallery_bulk_delete_browser_smoke.mjs
 cd ui && npm run build
 
 git push origin codex/workspace-cleanup-snapshot --tags
