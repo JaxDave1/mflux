@@ -31,8 +31,8 @@ ui/*.d.ts
 
 # build/ generated from 'pip install -e .' in developer mode
 build/
-.gz
-.fdb_latexmk
-.fls
-.aux
-.log
+*.gz
+*.fdb_latexmk
+*.fls
+*.aux
+*.log

@@ -276,16 +276,6 @@ export function Config() {
               onChange={(value) => setGenerationField("defaultModel", value)}
               options={defaultModelOptions}
             />
-            <div>
-              <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">OUTPUT FORMAT</div>
-              <ToggleChip
-                options={["png", "jpg", "jpeg", "webp"]}
-                value={draft.generation.outputFormat}
-                onChange={(value) =>
-                  setGenerationField("outputFormat", value as AppConfig["generation"]["outputFormat"])
-                }
-              />
-            </div>
             <ConfigInput
               label="DEFAULT QUANTIZE"
               type="number"
@@ -297,12 +287,6 @@ export function Config() {
               type="number"
               value={draft.generation.defaultSteps}
               onChange={(value) => setGenerationField("defaultSteps", Number(value))}
-            />
-            <ConfigInput
-              label="QUALITY"
-              type="number"
-              value={draft.generation.quality}
-              onChange={(value) => setGenerationField("quality", Number(value))}
             />
             <div>
               <div className="mb-2 font-label text-[10px] tracking-[0.18em] text-on-surface-variant">AUTO SEEDS</div>

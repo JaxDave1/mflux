@@ -38,21 +38,32 @@ def _resolve_path(value: str) -> Path:
     return (_root_dir() / path).resolve()
 
 
+_OUTPUT_SUFFIX = ".png"
+
+
+def _png_output_path(path: Path) -> Path:
+    if path.suffix:
+        return path.with_suffix(_OUTPUT_SUFFIX)
+    return path
+
+
 def _output_path(config: AppConfig, request: Txt2ImgRequest) -> Path:
     base = _resolve_path(request.output) if request.output else _resolve_path(config.paths.outputDir)
     if base.suffix:
-        base.parent.mkdir(parents=True, exist_ok=True)
-        return base
+        output = _png_output_path(base)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        return output
     base.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return base / f"mflux_{request.model}_{stamp}.{config.generation.outputFormat}"
+    return base / f"mflux_{request.model}_{stamp}{_OUTPUT_SUFFIX}"
 
 
-def _generic_output_path(config: AppConfig, output: str | None, stem: str, suffix: str = ".png") -> Path:
+def _generic_output_path(config: AppConfig, output: str | None, stem: str, suffix: str = _OUTPUT_SUFFIX) -> Path:
     base = _resolve_path(output) if output else _resolve_path(config.paths.outputDir)
     if base.suffix:
-        base.parent.mkdir(parents=True, exist_ok=True)
-        return base
+        output_path = _png_output_path(base)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        return output_path
     base.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return base / f"{stem}_{stamp}{suffix}"

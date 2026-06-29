@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### MFLUX Neural Interface — post-v0.3 session (2026-06-24)
+
+**PNG output enforcement (11A)**
+- All generated image outputs use `.png` extension regardless of config or explicit output path.
+- `api/services/mflux_cli.py`: `_output_path` and `_generic_output_path` normalize to PNG; user-supplied paths with other extensions are rewritten.
+- `api/schemas/requests.py`: `outputFormat` locked to `"png"` with coercion on load for legacy configs.
+- Config UI: removed output format selector (`ui/src/pages/Config.tsx`).
+
+**Gallery multi-select UX (11B)**
+- Selection checkboxes always visible on gallery tiles (no BROWSE/SELECT mode toggle).
+- **SELECT PAGE** button adds all images on the current page to the bulk selection.
+- Normal tile click opens Output Details without clearing bulk selection; shift/cmd-click still extends selection.
+- Details panel delete button becomes `DELETE N SELECTED` when multiple items are selected.
+- See `PHASE_11_V0_4.md` and `GROK_AGENT_NOTES.md`.
+
 ---
 
 ## [neural-interface-v0.3] - 2026-06-24

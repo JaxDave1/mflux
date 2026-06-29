@@ -10,6 +10,19 @@ export function toggleGallerySelectionId(selectedIds: Set<string>, id: string): 
   return next;
 }
 
+export function selectGalleryPage(items: GenerationOutput[], selectedIds: Set<string>): Set<string> {
+  const next = new Set(selectedIds);
+  items.forEach((item) => next.add(item.id));
+  return next;
+}
+
+export function selectedGalleryItems(
+  items: GenerationOutput[],
+  selectedIds: Set<string>
+): GenerationOutput[] {
+  return items.filter((item) => selectedIds.has(item.id));
+}
+
 export function rangeGallerySelectionIds(
   items: GenerationOutput[],
   anchorId: string | null,

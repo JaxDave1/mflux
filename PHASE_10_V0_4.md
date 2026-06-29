@@ -43,5 +43,11 @@
 
 ---
 
+## Follow-on — Phase 11 (v0.4 session)
+
+See `PHASE_11_V0_4.md`:
+- PNG-only generation outputs
+- Gallery always-on checkboxes + SELECT PAGE bulk delete
+
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24

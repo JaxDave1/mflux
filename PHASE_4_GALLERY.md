@@ -10,7 +10,7 @@
 
 ## 0. Scope
 
-Three v0.1 Gallery features. Multi-select, favorites, and metadata viewer are deferred to v0.2 per scope decision.
+Three v0.1 Gallery features. Multi-select, favorites, and metadata viewer were deferred to v0.2 (delivered in Phase 8; multi-select UX improved in Phase 11 / v0.4).
 
 1. Delete image (single, with confirmation)
 2. Open in Finder

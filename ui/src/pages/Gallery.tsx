@@ -22,6 +22,8 @@ import {
 import {
   firstGallerySelectionItem,
   rangeGallerySelectionIds,
+  selectGalleryPage,
+  selectedGalleryItems,
   toggleGallerySelectionId
 } from "../lib/gallerySelection";
 import { hasGalleryJsonSidecar } from "../lib/gallerySidecar";
@@ -30,7 +32,6 @@ import { resolveOutputImageSrc } from "../lib/media";
 import type { GenerationOutput } from "../lib/types";
 
 type GalleryFilter = "ALL" | "FAVORITES" | "VALIDATED" | "METADATA" | "UNKNOWN";
-type GalleryBrowseMode = "BROWSE" | "SELECT";
 
 const GALLERY_PAGE_SIZE = 12;
 
@@ -41,7 +42,6 @@ export function Gallery() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<GenerationOutput | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [browseMode, setBrowseMode] = useState<GalleryBrowseMode>("BROWSE");
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GenerationOutput | null>(null);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
@@ -88,10 +88,8 @@ export function Gallery() {
     });
   }, [favoriteIds, filter, items, query]);
 
-  const selectedItems = useMemo(
-    () => filteredItems.filter((item) => selectedIds.has(item.id)),
-    [filteredItems, selectedIds]
-  );
+  const selectedItems = useMemo(() => selectedGalleryItems(items, selectedIds), [items, selectedIds]);
+  const selectedCount = selectedItems.length;
 
   const pageCount = Math.max(1, Math.ceil(filteredItems.length / GALLERY_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -109,8 +107,7 @@ export function Gallery() {
     setPage((value) => Math.min(value, pageCount));
   }, [pageCount]);
 
-  const outputFeedTitle =
-    selectedIds.size > 0 ? `OUTPUT FEED · ${selectedIds.size} SELECTED` : "OUTPUT FEED";
+  const outputFeedTitle = selectedCount > 0 ? `OUTPUT FEED · ${selectedCount} SELECTED` : "OUTPUT FEED";
 
   const clearSelection = () => {
     setSelectedIds(new Set());
@@ -121,27 +118,24 @@ export function Gallery() {
     setSelected(item);
     setError(null);
 
-    if (browseMode === "SELECT") {
-      setSelectedIds((current) => toggleGallerySelectionId(current, item.id));
-      setSelectionAnchorId(item.id);
-      return;
-    }
-
-    const multiSelect = event.metaKey || event.ctrlKey;
     if (event.shiftKey) {
       setSelectedIds((current) => rangeGallerySelectionIds(filteredItems, selectionAnchorId, item.id, current));
       setSelectionAnchorId(item.id);
       return;
     }
 
-    if (multiSelect) {
+    if (event.metaKey || event.ctrlKey) {
       setSelectedIds((current) => toggleGallerySelectionId(current, item.id));
       setSelectionAnchorId(item.id);
       return;
     }
 
-    setSelectedIds(new Set([item.id]));
     setSelectionAnchorId(item.id);
+  };
+
+  const selectPage = () => {
+    setSelectedIds((current) => selectGalleryPage(paginatedItems, current));
+    setSelectionAnchorId(paginatedItems[0]?.id ?? null);
   };
 
   const handleToggleSelection = (item: GenerationOutput) => {
@@ -222,7 +216,7 @@ export function Gallery() {
   };
 
   const revealBulkSelection = async () => {
-    const first = firstGallerySelectionItem(filteredItems, selectedIds);
+    const first = firstGallerySelectionItem(items, selectedIds);
     if (!first) {
       return;
     }
@@ -281,18 +275,6 @@ export function Gallery() {
                   value={filter}
                   onChange={(value) => setFilter(value as GalleryFilter)}
                 />
-                <ToggleChip
-                  options={["BROWSE", "SELECT"]}
-                  value={browseMode}
-                  onChange={(value) => {
-                    const nextMode = value as GalleryBrowseMode;
-                    setBrowseMode(nextMode);
-                    if (nextMode === "BROWSE") {
-                      clearSelection();
-                    }
-                  }}
-                  color="primary"
-                />
               </div>
               <input
                 value={query}
@@ -320,32 +302,30 @@ export function Gallery() {
           </Panel>
 
           <Panel title={outputFeedTitle} className="module-output-panel space-y-4">
-            {selectedIds.size > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                <GenerateButton
-                  onClick={() => setPendingBulkDelete(true)}
-                  label={`DELETE SELECTED (${selectedIds.size})`}
-                  icon="delete"
-                  variant="outline"
-                />
-                <GenerateButton
-                  onClick={() => void revealBulkSelection()}
-                  label="REVEAL FIRST IN FINDER"
-                  icon="folder_open"
-                  variant="outline"
-                />
-                <GenerateButton onClick={clearSelection} label="CLEAR SELECTION" variant="ghost" />
-              </div>
-            ) : null}
-            {browseMode === "SELECT" ? (
-              <div className="text-xs text-on-surface-variant">
-                Checkbox mode is on. You can also shift-click or cmd-click tiles for multi-select.
-              </div>
-            ) : (
-              <div className="text-xs text-on-surface-variant">
-                Tip: shift-click or cmd-click tiles to multi-select without entering select mode.
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              <GenerateButton onClick={selectPage} label="SELECT PAGE" icon="check_box" variant="ghost" />
+              {selectedCount > 0 ? (
+                <>
+                  <GenerateButton
+                    onClick={() => setPendingBulkDelete(true)}
+                    label={`DELETE SELECTED (${selectedCount})`}
+                    icon="delete"
+                    variant="outline"
+                  />
+                  <GenerateButton
+                    onClick={() => void revealBulkSelection()}
+                    label="REVEAL FIRST IN FINDER"
+                    icon="folder_open"
+                    variant="outline"
+                  />
+                  <GenerateButton onClick={clearSelection} label="CLEAR SELECTION" variant="ghost" />
+                </>
+              ) : null}
+            </div>
+            <div className="text-xs text-on-surface-variant">
+              Use the checkboxes to select outputs for bulk delete. Shift-click or cmd-click tiles to extend the
+              selection.
+            </div>
             {error ? (
               <div className="rounded-panel border border-error/20 bg-error/10 px-4 py-4 text-sm text-on-error-container">
                 {error}
@@ -368,7 +348,6 @@ export function Gallery() {
                   onToggleSelection={handleToggleSelection}
                   selectedId={selected?.id}
                   selectedIds={selectedIds}
-                  selectionMode={browseMode === "SELECT"}
                   onDelete={setPendingDelete}
                 />
                 <GalleryPager
@@ -479,10 +458,12 @@ export function Gallery() {
                   />
                   <button
                     type="button"
-                    onClick={() => setPendingDelete(selected)}
+                    onClick={() =>
+                      selectedCount > 1 ? setPendingBulkDelete(true) : setPendingDelete(selected)
+                    }
                     className="rounded-panel border border-error/60 bg-error/10 px-4 py-3 font-label text-xs uppercase tracking-[0.24em] text-error transition hover:bg-error/20 hover:shadow-[0_0_18px_rgba(255,77,107,0.22)]"
                   >
-                    DELETE OUTPUT
+                    {selectedCount > 1 ? `DELETE ${selectedCount} SELECTED` : "DELETE OUTPUT"}
                   </button>
                 </div>
                 <div className="space-y-3 rounded-panel border border-outline-variant/60 bg-surface-container-low p-4">
@@ -539,13 +520,13 @@ export function Gallery() {
       ) : null}
       {pendingBulkDelete ? (
         <ConfirmModal
-          title={`DELETE ${selectedIds.size} OUTPUTS?`}
+          title={`DELETE ${selectedCount} OUTPUTS?`}
           confirmLabel="DELETE ALL"
           busy={deleteBusy}
           onCancel={() => setPendingBulkDelete(false)}
           onConfirm={() => void deleteItems(selectedItems)}
         >
-          <p>This permanently deletes {selectedIds.size} images and their metadata sidecars.</p>
+          <p>This permanently deletes {selectedCount} images and their metadata sidecars.</p>
           <p className="mt-2">This cannot be undone.</p>
         </ConfirmModal>
       ) : null}

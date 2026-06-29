@@ -115,9 +115,7 @@ def mflux_fill_minimal_argv() -> list[str]:
 @pytest.fixture
 def mflux_save_depth_parser() -> CommandLineParser:
     parser = CommandLineParser(description="Save depth map from an image.")
-    parser.add_general_arguments()
     parser.add_save_depth_arguments()
-    parser.add_output_arguments()
     return parser
 
 
@@ -729,7 +727,7 @@ def test_save_depth_args(mflux_save_depth_parser, mflux_save_depth_minimal_argv)
     with patch("sys.argv", mflux_save_depth_minimal_argv + ["--output", "depth_map.png"]):
         args = mflux_save_depth_parser.parse_args()
         assert args.image_path == Path("image.png")
-        assert args.output == "depth_map.png"
+        assert args.output == Path("depth_map.png")
 
 
 @pytest.mark.fast

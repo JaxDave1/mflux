@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class LoraSelection(BaseModel):
@@ -185,10 +185,15 @@ class GenerationConfig(BaseModel):
     defaultModel: str
     defaultQuantize: int
     defaultSteps: int
-    outputFormat: Literal["png", "jpg", "jpeg", "webp"]
+    outputFormat: Literal["png"] = "png"
     quality: int
     autoSeeds: bool
     saveMetadataSidecar: bool = True
+
+    @field_validator("outputFormat", mode="before")
+    @classmethod
+    def _coerce_output_format(cls, value: object) -> str:
+        return "png"
 
 
 class SystemConfig(BaseModel):

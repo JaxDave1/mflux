@@ -121,7 +121,7 @@ export interface AppConfig {
     defaultModel: string;
     defaultQuantize: number;
     defaultSteps: number;
-    outputFormat: string;
+    outputFormat: "png";
     quality: number;
     autoSeeds: boolean;
     saveMetadataSidecar: boolean;

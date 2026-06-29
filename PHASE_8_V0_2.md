@@ -31,9 +31,10 @@ Four v0.2 work packages deferred from v0.1:
 
 ### 8A.2 Multi-select
 
-- [x] Shift/cmd-click or checkbox mode on `ImageGrid`
+- [x] Shift/cmd-click or checkbox mode on `ImageGrid` (v0.2)
 - [x] Bulk actions: delete selected, reveal first in Finder
 - [x] Selection count in panel header
+- [x] **v0.4 polish (Phase 11):** always-on checkboxes, SELECT PAGE, removed BROWSE/SELECT toggle — see `PHASE_11_V0_4.md`
 
 ### 8A.3 Metadata viewer
 
@@ -106,7 +107,7 @@ v0.2-specific highlights from `v0_2_signoff.py`:
 
 **Note:** Sign-off cache-delete tests remove HF hub dirs for `flux2-klein-4b` and `z-image-turbo`. Re-download from Models if those cards show NOT CACHED.
 
-**Follow-on:** Phase 9 (`PHASE_9_V0_3.md`) and Phase 10 (`PHASE_10_V0_4.md`) — v0.3 tag `neural-interface-v0.3`.
+**Follow-on:** Phase 9–11 — v0.3 tag `neural-interface-v0.3`; v0.4 session in `PHASE_11_V0_4.md` (uncommitted).
 
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24

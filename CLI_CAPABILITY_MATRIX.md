@@ -51,8 +51,12 @@ Hardening items completed for Neural Interface v0.1:
 |---|---|---|
 | API-driven model dropdowns | PASS | `useModuleModelOptions` + `lib/moduleModelOptions.ts` on Txt2Img, Img2Img, Inpaint, Kontext, ControlNet, and Config; options sourced from `/api/models` with per-module allowlists and downloaded-first ordering |
 | Module model registry | PASS | `validation_pass.py` verifies allowlisted builtin IDs exist in `/api/models` |
-| Cached module E2E jobs | PASS | 23/23 checks in `scripts/validation_pass_results.json` (2026-06-24): 5 cached txt2img models incl. `flux2-klein-4b`, plus img2img/inpaint/kontext/controlnet module smokes |
+| Cached module E2E jobs | PASS | 32/32 checks in `scripts/validation_pass_results.json` (2026-06-24, commit `3940960`): txt2img/img2img/inpaint/kontext/controlnet smokes + CivitAI/export E2E |
 | FLUX.2 Klein distilled guidance | PASS | `flux2-klein-4b` / `flux2-klein-9b` omit `--guidance` in CLI build; registry `guidance=null` |
 | UI build | PASS | `npm run build` in `ui/` |
 
 Completed in v0.2: CivitAI download, cache delete, quantized export, gallery favorites/multi-select, LoRA stack and live-preview toggle on all generation modules.
+
+**v0.3:** Dashboard runtime truth, job cancel fixes, gallery pagination on delete, CivitAI/export validation E2E.
+
+**v0.4 (Phase 11, uncommitted):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete. See `PHASE_11_V0_4.md` and `GROK_AGENT_NOTES.md`.

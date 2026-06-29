@@ -11,7 +11,6 @@ export function ImageGrid({
   onToggleSelection,
   selectedId,
   selectedIds,
-  selectionMode = false,
   favoriteIds,
   columns = 3,
   compact = false
@@ -22,7 +21,6 @@ export function ImageGrid({
   onToggleSelection?: (image: GenerationOutput) => void;
   selectedId?: string;
   selectedIds?: Set<string>;
-  selectionMode?: boolean;
   favoriteIds?: Set<string>;
   columns?: number;
   compact?: boolean;
@@ -75,39 +73,31 @@ export function ImageGrid({
                 </div>
               </div>
             </button>
-            {selectionMode ? (
-              <button
-                type="button"
-                aria-label={isBulkSelected ? "Deselect output" : "Select output"}
-                title={isBulkSelected ? "Deselect" : "Select"}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onToggleSelection?.(image);
-                }}
-                className={`absolute z-10 flex items-center justify-center rounded-panel border bg-black/75 transition hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/60 ${
-                  isBulkSelected
-                    ? "border-tertiary/70 text-tertiary"
-                    : "border-outline-variant/70 text-on-surface-variant"
-                } ${compact ? "left-1 top-1 h-6 w-6" : "left-2 top-2 h-8 w-8"}`}
-              >
-                <Icon
-                  name={isBulkSelected ? "check_box" : "check_box_outline_blank"}
-                  className={compact ? "h-3 w-3" : "h-4 w-4"}
-                  title={isBulkSelected ? "Selected" : "Not selected"}
-                />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              aria-label={isBulkSelected ? "Deselect output" : "Select output"}
+              title={isBulkSelected ? "Deselect" : "Select"}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleSelection?.(image);
+              }}
+              className={`absolute z-10 flex items-center justify-center rounded-panel border bg-black/75 transition hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/60 ${
+                isBulkSelected
+                  ? "border-tertiary/70 text-tertiary"
+                  : "border-outline-variant/70 text-on-surface-variant"
+              } ${compact ? "left-1 top-1 h-6 w-6" : "left-2 top-2 h-8 w-8"}`}
+            >
+              <Icon
+                name={isBulkSelected ? "check_box" : "check_box_outline_blank"}
+                className={compact ? "h-3 w-3" : "h-4 w-4"}
+                title={isBulkSelected ? "Selected" : "Not selected"}
+              />
+            </button>
             {isFavorite ? (
               <div
                 className={`pointer-events-none absolute z-10 flex items-center justify-center rounded-panel border border-tertiary/50 bg-black/75 text-tertiary ${
-                  selectionMode
-                    ? compact
-                      ? "left-8 top-1 h-6 w-6"
-                      : "left-11 top-2 h-8 w-8"
-                    : compact
-                      ? "left-1 top-1 h-6 w-6"
-                      : "left-2 top-2 h-8 w-8"
+                  compact ? "left-8 top-1 h-6 w-6" : "left-11 top-2 h-8 w-8"
                 }`}
                 title="Favorited"
               >
