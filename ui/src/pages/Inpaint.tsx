@@ -21,32 +21,36 @@ import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
 import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { useStickyState } from "../hooks/useStickyState";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import { defaultSchedulerForModel, normalizeSchedulerForModel, type SchedulerId } from "../lib/schedulerOptions";
 import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
 import { useJobStore } from "../stores/useJobStore";
 export function Inpaint() {
-  const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("dev-fill");
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [steps, setSteps] = useState(25);
-  const [guidance, setGuidance] = useState(30);
-  const [width, setWidth] = useState(1024);
-  const [height, setHeight] = useState(1024);
-  const [scheduler, setScheduler] = useState<SchedulerId>(defaultSchedulerForModel("dev-fill"));
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seed, setSeed] = useState("42");
+  const [prompt, setPrompt] = useStickyState("module:inpaint:prompt", "");
+  const [model, setModel] = useStickyState("module:inpaint:model", "dev-fill");
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:inpaint:quantize", "8");
+  const [steps, setSteps] = useStickyState("module:inpaint:steps", 25);
+  const [guidance, setGuidance] = useStickyState("module:inpaint:guidance", 30);
+  const [width, setWidth] = useStickyState("module:inpaint:width", 1024);
+  const [height, setHeight] = useStickyState("module:inpaint:height", 1024);
+  const [scheduler, setScheduler] = useStickyState<SchedulerId>(
+    "module:inpaint:scheduler",
+    defaultSchedulerForModel("dev-fill")
+  );
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:inpaint:seedMode", "auto");
+  const [seed, setSeed] = useStickyState("module:inpaint:seed", "42");
   const [searchParams] = useSearchParams();
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [maskPath, setMaskPath] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useStickyState<string | null>("module:inpaint:imagePath", null);
+  const [maskPath, setMaskPath] = useStickyState<string | null>("module:inpaint:maskPath", null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);
   const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("inpaint");
   const { options: modelOptions } = useModuleModelOptions("inpaint", model);
   const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
-    useModuleLoraStack(model);
-  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+    useModuleLoraStack(model, "inpaint");
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting("inpaint");
 
   const onGenerate = async () => {
     if (!imagePath || !maskPath) {

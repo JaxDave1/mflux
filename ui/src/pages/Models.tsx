@@ -10,6 +10,7 @@ import {
 } from "../lib/checkpointOptions";
 import { offlineModelsResponse } from "../lib/fallbacks";
 import { api } from "../lib/api";
+import { useStickyState } from "../hooks/useStickyState";
 import { formatModelLabel } from "../lib/labels";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import type { Job, LoraSummary, ModelSummary, ModelsResponse, SecretStatus } from "../lib/types";
@@ -214,8 +215,8 @@ function ModelCard({
 
 export function Models() {
   const [data, setData] = useState<ModelsResponse | null>(null);
-  const [filter, setFilter] = useState<ModelFilter>("BUILTIN");
-  const [selectedCheckpoint, setSelectedCheckpoint] = useState("");
+  const [filter, setFilter] = useStickyState<ModelFilter>("module:models:filter", "BUILTIN");
+  const [selectedCheckpoint, setSelectedCheckpoint] = useStickyState("module:models:selectedCheckpoint", "");
   const [compatibleLoras, setCompatibleLoras] = useState<LoraSummary[]>([]);
   const [lorasLoading, setLorasLoading] = useState(false);
   const [lorasError, setLorasError] = useState<string | null>(null);
@@ -226,10 +227,16 @@ export function Models() {
   const [usingFallbackCatalog, setUsingFallbackCatalog] = useState(false);
   const [pendingCacheDeleteId, setPendingCacheDeleteId] = useState<string | null>(null);
   const [deletingCacheId, setDeletingCacheId] = useState<string | null>(null);
-  const [civitaiInput, setCivitaiInput] = useState("");
-  const [civitaiDestination, setCivitaiDestination] = useState<CivitaiDestination>("lora");
+  const [civitaiInput, setCivitaiInput] = useStickyState("module:models:civitaiInput", "");
+  const [civitaiDestination, setCivitaiDestination] = useStickyState<CivitaiDestination>(
+    "module:models:civitaiDestination",
+    "lora"
+  );
   const [civitaiLoading, setCivitaiLoading] = useState(false);
-  const [exportQuantize, setExportQuantize] = useState<QuantizeSelection>("8");
+  const [exportQuantize, setExportQuantize, hadCachedExportQuantize] = useStickyState<QuantizeSelection>(
+    "module:models:exportQuantize",
+    "8"
+  );
   const jobs = useJobStore((state) => state.jobs);
   const submitJob = useJobStore((state) => state.submitJob);
   const cancelJob = useJobStore((state) => state.cancelJob);
@@ -260,10 +267,10 @@ export function Models() {
   }, [filter]);
 
   useEffect(() => {
-    if (config?.generation.defaultQuantize) {
+    if (config?.generation.defaultQuantize && !hadCachedExportQuantize) {
       setExportQuantize("8");
     }
-  }, [config?.generation.defaultQuantize]);
+  }, [config?.generation.defaultQuantize, hadCachedExportQuantize, setExportQuantize]);
 
   const checkpointOptions = useMemo(() => buildCheckpointOptions(data), [data]);
 

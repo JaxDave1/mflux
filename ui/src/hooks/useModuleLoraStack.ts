@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LoraSelection, LoraStackCompatibility } from "../components/LoRAStack";
+import { useStickyState } from "./useStickyState";
 
-export function useModuleLoraStack(model: string) {
-  const [loras, setLoras] = useState<LoraSelection[]>([]);
+export function useModuleLoraStack(model: string, moduleKey: string) {
+  const [loras, setLoras] = useStickyState<LoraSelection[]>(`module:${moduleKey}:loras`, []);
   const [loraModelNotice, setLoraModelNotice] = useState<{
     message: string;
     oldModel: string;

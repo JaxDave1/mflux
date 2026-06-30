@@ -1,19 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useConfigStore } from "../stores/useConfigStore";
+import { useStickyState } from "./useStickyState";
 
-export function useModuleLivePreviewSetting() {
+export function useModuleLivePreviewSetting(moduleKey: string) {
   const { config, loadConfig } = useConfigStore();
-  const [livePreview, setLivePreview] = useState(false);
+  const [livePreview, setLivePreview, hadCachedLivePreview] = useStickyState(
+    `module:${moduleKey}:livePreview`,
+    false
+  );
 
   useEffect(() => {
     void loadConfig();
   }, [loadConfig]);
 
   useEffect(() => {
-    if (config) {
+    if (config && !hadCachedLivePreview) {
       setLivePreview(config.system.livePreview);
     }
-  }, [config]);
+  }, [config, hadCachedLivePreview, setLivePreview]);
 
   return { livePreview, setLivePreview };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,6 +12,7 @@ import {
   ToggleChip
 } from "../components";
 import { api } from "../lib/api";
+import { useStickyState } from "../hooks/useStickyState";
 import { buildGalleryReferenceRoute } from "../lib/galleryReference";
 import {
   loadGalleryFavoriteIds,
@@ -39,8 +40,8 @@ const GALLERY_PAGE_SIZE = 12;
 export function Gallery() {
   const [items, setItems] = useState<GenerationOutput[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadGalleryFavoriteIds());
-  const [filter, setFilter] = useState<GalleryFilter>("ALL");
-  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useStickyState<GalleryFilter>("module:gallery:filter", "ALL");
+  const [query, setQuery] = useStickyState("module:gallery:query", "");
   const [selected, setSelected] = useState<GenerationOutput | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
@@ -50,7 +51,8 @@ export function Gallery() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useStickyState("module:gallery:page", 1);
+  const filterMountedRef = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,6 +106,10 @@ export function Gallery() {
   }, [currentPage, filteredItems]);
 
   useEffect(() => {
+    if (!filterMountedRef.current) {
+      filterMountedRef.current = true;
+      return;
+    }
     setPage(1);
   }, [filter, query]);
 

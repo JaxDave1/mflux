@@ -21,31 +21,35 @@ import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
 import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { useStickyState } from "../hooks/useStickyState";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import { defaultSchedulerForModel, normalizeSchedulerForModel, type SchedulerId } from "../lib/schedulerOptions";
 import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
 import { useJobStore } from "../stores/useJobStore";
 export function Kontext() {
-  const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("dev-kontext");
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [steps, setSteps] = useState(25);
-  const [guidance, setGuidance] = useState(2.5);
-  const [width, setWidth] = useState(1024);
-  const [height, setHeight] = useState(1024);
-  const [scheduler, setScheduler] = useState<SchedulerId>(defaultSchedulerForModel("dev-kontext"));
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seed, setSeed] = useState("42");
+  const [prompt, setPrompt] = useStickyState("module:kontext:prompt", "");
+  const [model, setModel] = useStickyState("module:kontext:model", "dev-kontext");
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:kontext:quantize", "8");
+  const [steps, setSteps] = useStickyState("module:kontext:steps", 25);
+  const [guidance, setGuidance] = useStickyState("module:kontext:guidance", 2.5);
+  const [width, setWidth] = useStickyState("module:kontext:width", 1024);
+  const [height, setHeight] = useStickyState("module:kontext:height", 1024);
+  const [scheduler, setScheduler] = useStickyState<SchedulerId>(
+    "module:kontext:scheduler",
+    defaultSchedulerForModel("dev-kontext")
+  );
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:kontext:seedMode", "auto");
+  const [seed, setSeed] = useStickyState("module:kontext:seed", "42");
   const [searchParams] = useSearchParams();
-  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useStickyState<string | null>("module:kontext:imagePath", null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);
   const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("kontext");
   const { options: modelOptions } = useModuleModelOptions("kontext", model);
   const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
-    useModuleLoraStack(model);
-  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+    useModuleLoraStack(model, "kontext");
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting("kontext");
 
   const onGenerate = async () => {
     if (!imagePath) return;

@@ -13,6 +13,7 @@ import {
 } from "../components";
 import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { useStickyState } from "../hooks/useStickyState";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
 import { useJobStore } from "../stores/useJobStore";
@@ -24,13 +25,13 @@ const upscalerModels = [
 
 export function Upscaler() {
   const [searchParams] = useSearchParams();
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [model, setModel] = useState("seedvr2-3b");
-  const [resolution, setResolution] = useState("2x");
-  const [softness, setSoftness] = useState(0);
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seed, setSeed] = useState("42");
+  const [imagePath, setImagePath] = useStickyState<string | null>("module:upscaler:imagePath", null);
+  const [model, setModel] = useStickyState("module:upscaler:model", "seedvr2-3b");
+  const [resolution, setResolution] = useStickyState("module:upscaler:resolution", "2x");
+  const [softness, setSoftness] = useStickyState("module:upscaler:softness", 0);
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:upscaler:quantize", "8");
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:upscaler:seedMode", "auto");
+  const [seed, setSeed] = useStickyState("module:upscaler:seed", "42");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);

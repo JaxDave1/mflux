@@ -22,6 +22,7 @@ import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
 import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { useStickyState } from "../hooks/useStickyState";
 import { api } from "../lib/api";
 import { quantizeApiValue, quantizeSelectionFromApi, type QuantizeSelection } from "../lib/quantize";
 import {
@@ -38,31 +39,37 @@ function snapDimension(value: number) {
 }
 
 export function Img2Img() {
-  const [prompt, setPrompt] = useState("");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [supportsNegativePrompt, setSupportsNegativePrompt] = useState(false);
-  const [model, setModel] = useState("z-image-turbo");
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [steps, setSteps] = useState(9);
-  const [guidance, setGuidance] = useState<number | null>(3.5);
-  const [width, setWidth] = useState(1280);
-  const [height, setHeight] = useState(768);
-  const [scheduler, setScheduler] = useState<SchedulerId>("linear");
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seed, setSeed] = useState("42");
-  const [imageStrength, setImageStrength] = useState(0.75);
-  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [prompt, setPrompt] = useStickyState("module:img2img:prompt", "");
+  const [negativePrompt, setNegativePrompt] = useStickyState("module:img2img:negativePrompt", "");
+  const [supportsNegativePrompt, setSupportsNegativePrompt] = useStickyState(
+    "module:img2img:supportsNegativePrompt",
+    false
+  );
+  const [model, setModel, hadCachedModel] = useStickyState("module:img2img:model", "z-image-turbo");
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:img2img:quantize", "8");
+  const [steps, setSteps] = useStickyState("module:img2img:steps", 9);
+  const [guidance, setGuidance] = useStickyState<number | null>("module:img2img:guidance", 3.5);
+  const [width, setWidth] = useStickyState("module:img2img:width", 1280);
+  const [height, setHeight] = useStickyState("module:img2img:height", 768);
+  const [scheduler, setScheduler] = useStickyState<SchedulerId>("module:img2img:scheduler", "linear");
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:img2img:seedMode", "auto");
+  const [seed, setSeed] = useStickyState("module:img2img:seed", "42");
+  const [imageStrength, setImageStrength] = useStickyState("module:img2img:imageStrength", 0.75);
+  const [imagePath, setImagePath, hadCachedImagePath] = useStickyState<string | null>(
+    "module:img2img:imagePath",
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);
   const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("img2img");
   const { options: modelOptions } = useModuleModelOptions("img2img", model);
   const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
-    useModuleLoraStack(model);
-  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+    useModuleLoraStack(model, "img2img");
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting("img2img");
   const [searchParams] = useSearchParams();
   const hasGalleryReference = Boolean(searchParams.get("ref")?.trim());
-  const dimensionSyncedPathRef = useRef<string | null>(null);
+  const dimensionSyncedPathRef = useRef<string | null>(hadCachedImagePath ? imagePath : null);
 
   const handleImagePathChange = useCallback((path: string | null) => {
     dimensionSyncedPathRef.current = null;
@@ -107,7 +114,7 @@ export function Img2Img() {
   const sourcePrompt = galleryReference?.sourcePrompt ?? galleryReference?.prompt;
 
   useEffect(() => {
-    if (hasGalleryReference) {
+    if (hasGalleryReference || hadCachedModel) {
       return;
     }
 
@@ -138,7 +145,7 @@ export function Img2Img() {
     return () => {
       alive = false;
     };
-  }, [hasGalleryReference]);
+  }, [hadCachedModel, hasGalleryReference]);
 
   useEffect(() => {
     if (!imagePath || dimensionSyncedPathRef.current === imagePath) {

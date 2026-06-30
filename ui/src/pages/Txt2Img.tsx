@@ -20,6 +20,7 @@ import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
 import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { useStickyState } from "../hooks/useStickyState";
 import { api } from "../lib/api";
 import type { ModelDefaultsResponse, Txt2ImgRequest } from "../lib/types";
 import { quantizeApiValue, quantizeSelectionFromApi, type QuantizeSelection } from "../lib/quantize";
@@ -38,23 +39,30 @@ type DirtyDefaults = {
 };
 
 export function Txt2Img() {
-  const [prompt, setPrompt] = useState("");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [supportsNegativePrompt, setSupportsNegativePrompt] = useState(false);
-  const [model, setModel] = useState("z-image-turbo");
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [steps, setSteps] = useState(9);
-  const [guidance, setGuidance] = useState<number | null>(0);
-  const [width, setWidth] = useState(1280);
-  const [height, setHeight] = useState(768);
-  const [scheduler, setScheduler] = useState<SchedulerId>("linear");
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seedInput, setSeedInput] = useState("42");
-  const [lowRam, setLowRam] = useState(false);
-  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
-  const [dirty, setDirty] = useState<DirtyDefaults>({ steps: false, guidance: false, quantize: false });
+  const [prompt, setPrompt] = useStickyState("module:txt2img:prompt", "");
+  const [negativePrompt, setNegativePrompt] = useStickyState("module:txt2img:negativePrompt", "");
+  const [supportsNegativePrompt, setSupportsNegativePrompt] = useStickyState(
+    "module:txt2img:supportsNegativePrompt",
+    false
+  );
+  const [model, setModel, hadCachedModel] = useStickyState("module:txt2img:model", "z-image-turbo");
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:txt2img:quantize", "8");
+  const [steps, setSteps] = useStickyState("module:txt2img:steps", 9);
+  const [guidance, setGuidance] = useStickyState<number | null>("module:txt2img:guidance", 0);
+  const [width, setWidth] = useStickyState("module:txt2img:width", 1280);
+  const [height, setHeight] = useStickyState("module:txt2img:height", 768);
+  const [scheduler, setScheduler] = useStickyState<SchedulerId>("module:txt2img:scheduler", "linear");
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:txt2img:seedMode", "auto");
+  const [seedInput, setSeedInput] = useStickyState("module:txt2img:seedInput", "42");
+  const [lowRam, setLowRam, hadCachedLowRam] = useStickyState("module:txt2img:lowRam", false);
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting("txt2img");
+  const [dirty, setDirty] = useStickyState<DirtyDefaults>("module:txt2img:dirty", {
+    steps: false,
+    guidance: false,
+    quantize: false
+  });
   const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange } =
-    useModuleLoraStack(model);
+    useModuleLoraStack(model, "txt2img");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -72,13 +80,16 @@ export function Txt2Img() {
   }, [loadConfig]);
 
   useEffect(() => {
-    if (!config) {
+    if (!config || hadCachedLowRam) {
       return;
     }
     setLowRam(config.system.lowRamMode);
-  }, [config]);
+  }, [config, hadCachedLowRam, setLowRam]);
 
   useEffect(() => {
+    if (hadCachedModel) {
+      return;
+    }
     let alive = true;
     api
       .moduleDefaults("txt2img")
@@ -105,7 +116,7 @@ export function Txt2Img() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [hadCachedModel]);
 
   const applyModelDefaults = async (nextModel: string) => {
     trackModelChange(model, nextModel);

@@ -22,33 +22,37 @@ import { useModuleLoraStack } from "../hooks/useModuleLoraStack";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
 import { useModuleLivePreviewSetting } from "../hooks/useModuleLivePreviewSetting";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
+import { useStickyState } from "../hooks/useStickyState";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import { defaultSchedulerForModel, normalizeSchedulerForModel, type SchedulerId } from "../lib/schedulerOptions";
 import { resolveIntegerSeed, type SeedMode } from "../lib/seed";
 import { useJobStore } from "../stores/useJobStore";
 export function ControlNet() {
-  const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("dev-controlnet-canny");
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [steps, setSteps] = useState(25);
-  const [guidance, setGuidance] = useState(3.5);
-  const [width, setWidth] = useState(1024);
-  const [height, setHeight] = useState(1024);
-  const [scheduler, setScheduler] = useState<SchedulerId>(defaultSchedulerForModel("dev-controlnet-canny"));
-  const [seedMode, setSeedMode] = useState<SeedMode>("auto");
-  const [seed, setSeed] = useState("42");
-  const [strength, setStrength] = useState(0.4);
-  const [saveCanny, setSaveCanny] = useState("OFF");
+  const [prompt, setPrompt] = useStickyState("module:controlnet:prompt", "");
+  const [model, setModel] = useStickyState("module:controlnet:model", "dev-controlnet-canny");
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:controlnet:quantize", "8");
+  const [steps, setSteps] = useStickyState("module:controlnet:steps", 25);
+  const [guidance, setGuidance] = useStickyState("module:controlnet:guidance", 3.5);
+  const [width, setWidth] = useStickyState("module:controlnet:width", 1024);
+  const [height, setHeight] = useStickyState("module:controlnet:height", 1024);
+  const [scheduler, setScheduler] = useStickyState<SchedulerId>(
+    "module:controlnet:scheduler",
+    defaultSchedulerForModel("dev-controlnet-canny")
+  );
+  const [seedMode, setSeedMode] = useStickyState<SeedMode>("module:controlnet:seedMode", "auto");
+  const [seed, setSeed] = useStickyState("module:controlnet:seed", "42");
+  const [strength, setStrength] = useStickyState("module:controlnet:strength", 0.4);
+  const [saveCanny, setSaveCanny] = useStickyState("module:controlnet:saveCanny", "OFF");
   const [searchParams] = useSearchParams();
-  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useStickyState<string | null>("module:controlnet:imagePath", null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);
   const { job: latestJob, stepwiseImages, activeJobs } = useModuleLivePreview("controlnet");
   const { options: modelOptions } = useModuleModelOptions("controlnet", model);
   const { loras, setLoras, loraModelNotice, trackModelChange, onCompatibilityChange, loraJobParams } =
-    useModuleLoraStack(model);
-  const { livePreview, setLivePreview } = useModuleLivePreviewSetting();
+    useModuleLoraStack(model, "controlnet");
+  const { livePreview, setLivePreview } = useModuleLivePreviewSetting("controlnet");
 
   const onGenerate = async () => {
     if (!imagePath) return;

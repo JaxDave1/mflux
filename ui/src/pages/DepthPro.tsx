@@ -3,14 +3,15 @@ import { useSearchParams } from "react-router-dom";
 import { GenerateButton, ImageInput, ModuleRunColumn, PageHeader, Panel, QuantizeField } from "../components";
 import { useModuleHeaderStatus } from "../hooks/useModuleHeaderStatus";
 import { useModuleLivePreview } from "../hooks/useModuleLivePreview";
+import { useStickyState } from "../hooks/useStickyState";
 import { quantizeApiValue, type QuantizeSelection } from "../lib/quantize";
 import { useJobStore } from "../stores/useJobStore";
 
 export function DepthPro() {
   const [searchParams] = useSearchParams();
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [quantize, setQuantize] = useState<QuantizeSelection>("8");
-  const [output, setOutput] = useState("");
+  const [imagePath, setImagePath] = useStickyState<string | null>("module:depthPro:imagePath", null);
+  const [quantize, setQuantize] = useStickyState<QuantizeSelection>("module:depthPro:quantize", "8");
+  const [output, setOutput] = useStickyState("module:depthPro:output", "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const submitJob = useJobStore((state) => state.submitJob);

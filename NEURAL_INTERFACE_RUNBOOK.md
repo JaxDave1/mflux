@@ -26,10 +26,11 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/v0_2_signoff.py
 .venv/bin/python scripts/validation_pass.py
 node scripts/gallery_bulk_delete_browser_smoke.mjs
+node scripts/navigation_state_browser_smoke.mjs
 cd ui && npm run build
 ```
 
-`gallery_bulk_delete_browser_smoke.mjs` requires API + UI dev servers to be running and launches headless Chrome/Chromium. Set `CHROME_BIN` if Chrome is not installed in a standard location.
+Browser smokes require the UI dev server to be running and launch headless Chrome/Chromium. `gallery_bulk_delete_browser_smoke.mjs` also requires the API server. Set `CHROME_BIN` if Chrome is not installed in a standard location.
 
 ### Validation env vars
 
@@ -59,6 +60,10 @@ git push origin codex/workspace-cleanup-snapshot --tags
 2. Use **SELECT ALL FILTERED** to select every output matching the current filter/search across pages; confirm the selection first (post-v0.4 hardening).
 3. When multiple outputs are selected, per-tile delete buttons are hidden; use **DELETE SELECTED (N)** and confirm the delete.
 4. Shift-click / cmd-click tiles to extend selection without checkboxes.
+
+## Section state (post-v0.4 hardening)
+
+Generation controls, LoRA stacks, Gallery filter/search/page, and Models controls stay in memory while navigating between sections. A full browser reload starts from current backend defaults again.
 
 ## Output format (v0.4)
 
