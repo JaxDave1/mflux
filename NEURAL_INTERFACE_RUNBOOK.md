@@ -57,7 +57,7 @@ git push origin codex/workspace-cleanup-snapshot --tags
 
 1. Check boxes on tiles (top-left), or use **SELECT PAGE** for visible outputs (v0.4).
 2. Use **SELECT ALL FILTERED** to select every output matching the current filter/search across pages; confirm the selection first (post-v0.4 hardening).
-3. Click **DELETE SELECTED (N)** and confirm the delete.
+3. When multiple outputs are selected, per-tile delete buttons are hidden; use **DELETE SELECTED (N)** and confirm the delete.
 4. Shift-click / cmd-click tiles to extend selection without checkboxes.
 
 ## Output format (v0.4)

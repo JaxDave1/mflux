@@ -13,7 +13,8 @@ export function ImageGrid({
   selectedIds,
   favoriteIds,
   columns = 3,
-  compact = false
+  compact = false,
+  hideDeleteActions = false
 }: {
   images: GenerationOutput[];
   onSelect?: (image: GenerationOutput, event: MouseEvent<HTMLButtonElement>) => void;
@@ -24,6 +25,7 @@ export function ImageGrid({
   favoriteIds?: Set<string>;
   columns?: number;
   compact?: boolean;
+  hideDeleteActions?: boolean;
 }) {
   return (
     <div
@@ -104,7 +106,7 @@ export function ImageGrid({
                 <Icon name="star" className={compact ? "h-3 w-3" : "h-4 w-4"} title="Favorited" />
               </div>
             ) : null}
-            {onDelete ? (
+            {onDelete && !hideDeleteActions ? (
               <button
                 type="button"
                 aria-label={`Delete output: ${image.prompt}`}

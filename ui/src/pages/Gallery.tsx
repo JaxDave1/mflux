@@ -371,6 +371,7 @@ export function Gallery() {
                   selectedId={selected?.id}
                   selectedIds={selectedIds}
                   onDelete={setPendingDelete}
+                  hideDeleteActions={selectedCount > 1}
                 />
                 <GalleryPager
                   page={currentPage}

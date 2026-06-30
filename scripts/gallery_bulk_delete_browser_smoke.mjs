@@ -338,6 +338,20 @@ async function runBrowserSmoke(outputs) {
       "Bulk delete toolbar"
     );
 
+    await waitForBrowserCondition(
+      client,
+      `(() => {
+        const cards = Array.from(document.querySelectorAll(".group.relative"));
+        return cards.length === 2 && cards.every((card) =>
+          !Array.from(card.querySelectorAll("button")).some((candidate) =>
+            candidate.getAttribute("aria-label")?.startsWith("Delete output:")
+          )
+        );
+      })()`,
+      5000,
+      "Tile delete hidden during bulk selection"
+    );
+
     const deleteClicked = await evaluate(
       client,
       `(() => {
@@ -434,7 +448,7 @@ async function main() {
     await runBrowserSmoke(outputs);
     await assertDeleted(outputs);
     console.log(
-      "[PASS] Gallery browser bulk delete smoke — filtered 2 synthetic outputs, selected all, confirmed delete, files removed"
+      "[PASS] Gallery browser bulk delete smoke — filtered 2 synthetic outputs, selected all, hid tile deletes, confirmed delete, files removed"
     );
   } catch (error) {
     await cleanup(outputs);
