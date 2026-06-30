@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-06-29 after post-v0.4 Gallery batch delete validation.
+Living reference for AI agents working on this repo. Updated 2026-06-30 after post-v0.4 Gallery filtered selection hardening.
 
 ---
 
@@ -12,7 +12,7 @@ Living reference for AI agents working on this repo. Updated 2026-06-29 after po
 | **Branch** | `codex/workspace-cleanup-snapshot` |
 | **Latest tag** | `neural-interface-v0.4` |
 | **Latest validated phase** | Phase 11 — PNG output + gallery multi-delete UX |
-| **Latest local hardening** | Gallery batch delete API + browser smoke |
+| **Latest local hardening** | Gallery batch delete API + filtered bulk selection |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -44,11 +44,12 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### v0.4 — `neural-interface-v0.4` (Phase 11)
 - **PNG output:** all generation outputs forced to `.png`; config format selector removed
-- **Gallery UX:** always-visible checkboxes, SELECT PAGE, bulk delete toolbar; removed BROWSE/SELECT toggle
+- **Gallery UX:** always-visible checkboxes, SELECT PAGE, SELECT ALL FILTERED, bulk delete toolbar; removed BROWSE/SELECT toggle
 
 ### Post-v0.4 local hardening
 - **Gallery API:** `DELETE /api/gallery` accepts `ids[]` and returns per-item `deleted` / `failed` results; single-item delete remains compatible.
 - **Gallery UI:** bulk delete toolbar now uses one batch API request while preserving existing pagination, selection, favorite, and partial-failure behavior.
+- **Gallery selection:** SELECT ALL FILTERED opens a neutral confirmation modal, then selects every output matching the current filter/search across pages.
 - **Validation:** browser bulk-delete smoke plus API smoke cover batch deletion; API smoke now cancels the generation job before checking SSE so the stream returns from a terminal state.
 
 ---
@@ -70,25 +71,25 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ---
 
-## 4. Validation state (2026-06-29)
+## 4. Validation state (2026-06-30)
 
 | Suite | Result | Artifact |
 |---|---|---|
 | `validation_pass.py` | 32 / 0 / 0 | `scripts/validation_pass_results.json` |
 | `v0_2_signoff.py` | 15 / 0 / 0 | `scripts/v0_2_signoff_results.json` |
 | `smoke_test_neural_interface.py` | 34 / 0 / 0 | `scripts/smoke_test_results.json` |
-| `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: selected 2 synthetic outputs, confirmed modal, files removed |
-| `npm run build` | PASS | post batch delete API/UI |
+| `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: filtered 2 synthetic outputs, SELECT ALL FILTERED, confirmed selection, deleted files |
+| `npm run build` | PASS | post filtered selection hardening |
 | `.venv/bin/python -m pytest -q -m fast` | 434 PASS / 79 deselected | Includes PNG output policy and Gallery batch delete coverage |
-| `npm run test:unit` | 5 PASS | Gallery selection helper coverage |
+| `npm run test:unit` | 6 PASS | Gallery selection helper coverage, including filtered selection |
 
 **Sign-off side effect:** `v0_2_signoff.py` deletes HF cache for `z-image-turbo` and `flux2-klein-4b`. Re-download from Models if cards show NOT CACHED.
 
 ---
 
-## 5. Git state (2026-06-29)
+## 5. Git state (2026-06-30)
 
-**Committed:** Phase 11 v0.4 checkpoint, release-doc refresh, Gallery bulk-delete browser smoke, and Gallery batch-delete API hardening are local on `codex/workspace-cleanup-snapshot`.
+**Committed:** Phase 11 v0.4 checkpoint, release-doc refresh, Gallery bulk-delete browser smoke, Gallery batch-delete API hardening, and filtered selection hardening are local on `codex/workspace-cleanup-snapshot`.
 
 **Push:** `git push origin codex/workspace-cleanup-snapshot --tags` failed previously (no GitHub credentials in agent environment). User must push manually.
 
@@ -112,15 +113,14 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### Medium priority
 
-2. **SELECT ALL (filtered)** — Extend SELECT PAGE to “select all matching current filter” across pages (with confirmation).
-3. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
-4. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
+2. **Per-tile hover delete vs bulk** — Hover delete still deletes one item; consider hiding it when `selectedIds.size > 1` to avoid confusion.
+3. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
 
 ### Low priority / corrections
 
-5. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
-6. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
-7. **Bulk delete failure UX** — Partial failures show the first error message only; consider listing all failed paths.
+4. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
+5. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
+6. **Bulk delete failure UX** — Partial failures show the first error message only; consider listing all failed paths.
 
 ---
 
@@ -152,4 +152,4 @@ git push origin codex/workspace-cleanup-snapshot --tags
 ---
 
 **Maintainer:** David Hendricks
-**Last updated by:** Codex (2026-06-29)
+**Last updated by:** Codex (2026-06-30)

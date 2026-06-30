@@ -10,10 +10,14 @@ export function toggleGallerySelectionId(selectedIds: Set<string>, id: string): 
   return next;
 }
 
-export function selectGalleryPage(items: GenerationOutput[], selectedIds: Set<string>): Set<string> {
+export function selectGalleryItems(items: GenerationOutput[], selectedIds: Set<string>): Set<string> {
   const next = new Set(selectedIds);
   items.forEach((item) => next.add(item.id));
   return next;
+}
+
+export function selectGalleryPage(items: GenerationOutput[], selectedIds: Set<string>): Set<string> {
+  return selectGalleryItems(items, selectedIds);
 }
 
 export function selectedGalleryItems(

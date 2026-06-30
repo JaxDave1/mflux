@@ -16,9 +16,9 @@ Reasoning:
 - CivitAI downloads: `civitai_download` job module fetches `model-versions/{id}` and streams the primary `.safetensors` file into the configured LoRA or custom model directory. Token injected from vault (`civitai` key).
 - Quantized export: `model_export` job module wraps `mflux-save` (`mflux.models.common.cli.save`) for cached built-in checkpoints. Writes `{modelDir}/{model}_q{quantize}/` with safetensors shards.
 
-## Smoke verification (2026-06-24)
+## Smoke verification (2026-06-29)
 
-Automated pass: `scripts/smoke_test_neural_interface.py` (31 PASS / 1 FAIL / 0 SKIP).
+Automated pass: `scripts/smoke_test_neural_interface.py` (34 PASS / 0 FAIL / 0 SKIP).
 
 Results written to `scripts/smoke_test_results.json`. Phase checklists updated in `PHASE_1_FOUNDATION.md` through `PHASE_5_MODELS.md`.
 
@@ -59,4 +59,4 @@ Completed in v0.2: CivitAI download, cache delete, quantized export, gallery fav
 
 **v0.3:** Dashboard runtime truth, job cancel fixes, gallery pagination on delete, CivitAI/export validation E2E.
 
-**v0.4 (Phase 11):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete. See `PHASE_11_V0_4.md` and `GROK_AGENT_NOTES.md`.
+**v0.4 (Phase 11):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete. Post-v0.4 local hardening adds the batch Gallery delete API, SELECT ALL FILTERED, and browser smoke. See `PHASE_11_V0_4.md` and `GROK_AGENT_NOTES.md`.

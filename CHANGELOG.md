@@ -10,8 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Gallery delete hardening**
 - Added `DELETE /api/gallery` batch delete with an `ids[]` body and per-item `deleted` / `failed` results.
 - Gallery bulk-delete UI now uses the batch endpoint instead of looping over single-item deletes.
+- Added **SELECT ALL FILTERED** on Gallery with a confirmation step, selecting every output matching the current filter/search across pages.
 - Added focused pytest coverage for batch delete success and stale/missing IDs.
 - Extended `smoke_test_neural_interface.py` with direct batch delete coverage and reordered the SSE smoke check to avoid blocking on a running job stream.
+- Extended `gallery_bulk_delete_browser_smoke.mjs` to cover filtered selection before batch delete.
 
 ## [neural-interface-v0.4] - 2026-06-29
 

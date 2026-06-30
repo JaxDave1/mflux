@@ -17,6 +17,7 @@ vm.runInNewContext(outputText, { module, exports: module.exports, Set });
 const {
   firstGallerySelectionItem,
   rangeGallerySelectionIds,
+  selectGalleryItems,
   selectGalleryPage,
   selectedGalleryItems,
   toggleGallerySelectionId
@@ -36,6 +37,15 @@ test("selectGalleryPage adds visible page items without clearing existing select
   const next = selectGalleryPage([item("a"), item("b")], selected);
 
   assert.deepEqual([...next].sort(), ["a", "b", "older"]);
+  assert.deepEqual([...selected], ["older"]);
+});
+
+test("selectGalleryItems adds filtered items across pages without clearing existing selection", () => {
+  const selected = new Set(["older"]);
+  const filteredItems = [item("a"), item("b"), item("c")];
+  const next = selectGalleryItems(filteredItems, selected);
+
+  assert.deepEqual([...next].sort(), ["a", "b", "c", "older"]);
   assert.deepEqual([...selected], ["older"]);
 });
 

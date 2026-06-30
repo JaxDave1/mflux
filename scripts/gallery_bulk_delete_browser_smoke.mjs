@@ -148,12 +148,14 @@ async function createSyntheticOutputs() {
   await mkdir(outputDir, { recursive: true });
 
   const stamp = Date.now();
+  const commonQuery = `gallery bulk delete smoke ${stamp}`;
   const outputs = ["alpha", "bravo"].map((suffix, index) => {
     const id = `gallery_bulk_smoke_${stamp}_${suffix}`;
-    const prompt = `gallery bulk delete smoke ${suffix} ${stamp}`;
+    const prompt = `${commonQuery} ${suffix}`;
     return {
       id,
       prompt,
+      commonQuery,
       imagePath: path.join(outputDir, `${id}.png`),
       metadataPath: path.join(outputDir, `${id}.metadata.json`),
       metadata: {
@@ -258,31 +260,75 @@ async function runBrowserSmoke(outputs) {
       "Synthetic gallery cards"
     );
 
-    const selectResult = await evaluate(
+    const filterQuery = JSON.stringify(outputs[0].commonQuery);
+    const filterResult = await evaluate(
       client,
       `(() => {
-        const ids = ${idList};
-        for (const id of ids) {
-          const image = Array.from(document.images).find((candidate) =>
-            decodeURIComponent(candidate.src).includes(id)
-          );
-          const card = image?.closest(".group.relative");
-          if (!card) {
-            return { ok: false, reason: "missing card", id, text: document.body.innerText.slice(0, 2000) };
-          }
-          const button = Array.from(card.querySelectorAll("button")).find((candidate) =>
-            ["Select output", "Deselect output"].includes(candidate.getAttribute("aria-label"))
-          );
-          if (!button) {
-            return { ok: false, reason: "missing selection button", id };
-          }
-          button.click();
+        const input = Array.from(document.querySelectorAll("input")).find((candidate) =>
+          candidate.getAttribute("placeholder") === "Search prompt, model, or path"
+        );
+        if (!input) {
+          return { ok: false, reason: "missing search input", text: document.body.innerText.slice(0, 2000) };
         }
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        if (!setter) {
+          return { ok: false, reason: "missing input value setter" };
+        }
+        setter.call(input, ${filterQuery});
+        input.dispatchEvent(new Event("input", { bubbles: true }));
         return { ok: true };
       })()`
     );
-    if (!selectResult?.ok) {
-      throw new Error(`Failed to select synthetic outputs: ${JSON.stringify(selectResult)}`);
+    if (!filterResult?.ok) {
+      throw new Error(`Failed to filter synthetic outputs: ${JSON.stringify(filterResult)}`);
+    }
+
+    await waitForBrowserCondition(
+      client,
+      `(document.body?.innerText ?? "").includes("SELECT ALL FILTERED (2)")`,
+      5000,
+      "Filtered gallery toolbar"
+    );
+
+    const selectAllClicked = await evaluate(
+      client,
+      `(() => {
+        const button = Array.from(document.querySelectorAll("button")).find((candidate) =>
+          candidate.textContent.trim().includes("SELECT ALL FILTERED (2)")
+        );
+        if (!button) {
+          return false;
+        }
+        button.click();
+        return true;
+      })()`
+    );
+    if (!selectAllClicked) {
+      throw new Error("SELECT ALL FILTERED (2) button was not found");
+    }
+
+    await waitForBrowserCondition(
+      client,
+      `(document.body?.innerText ?? "").includes("SELECT 2 FILTERED OUTPUTS?")`,
+      5000,
+      "Filtered selection confirmation modal"
+    );
+
+    const selectConfirmClicked = await evaluate(
+      client,
+      `(() => {
+        const button = Array.from(document.querySelectorAll("button")).find((candidate) =>
+          candidate.textContent.trim() === "SELECT ALL"
+        );
+        if (!button) {
+          return false;
+        }
+        button.click();
+        return true;
+      })()`
+    );
+    if (!selectConfirmClicked) {
+      throw new Error("SELECT ALL confirmation button was not found");
     }
 
     await waitForBrowserCondition(
@@ -387,7 +433,9 @@ async function main() {
   try {
     await runBrowserSmoke(outputs);
     await assertDeleted(outputs);
-    console.log("[PASS] Gallery browser bulk delete smoke — selected 2 synthetic outputs, confirmed modal, files removed");
+    console.log(
+      "[PASS] Gallery browser bulk delete smoke — filtered 2 synthetic outputs, selected all, confirmed delete, files removed"
+    );
   } catch (error) {
     await cleanup(outputs);
     throw error;

@@ -49,6 +49,8 @@ Original v0.2 multi-select existed but required BROWSE→SELECT mode or modifier
 
 **Automated coverage:** `ui/tests/gallerySelection.test.mjs` verifies page selection, full-gallery selected item counting, range selection, toggle immutability, and first selected reveal ordering.
 
+**Post-v0.4 hardening:** Gallery now also supports **SELECT ALL FILTERED** with a neutral confirmation modal, selecting every output matching the current filter/search across pages.
+
 ---
 
 ## Sign-off
@@ -56,11 +58,11 @@ Original v0.2 multi-select existed but required BROWSE→SELECT mode or modifier
 | Suite | Last known | Report |
 |---|---|---|
 | `scripts/validation_pass.py` | **32 PASS / 0 FAIL / 0 SKIP** (2026-06-29) | `scripts/validation_pass_results.json` |
-| `scripts/smoke_test_neural_interface.py` | **32 PASS / 0 FAIL / 0 SKIP** (2026-06-29) | `scripts/smoke_test_results.json` |
+| `scripts/smoke_test_neural_interface.py` | **34 PASS / 0 FAIL / 0 SKIP** (2026-06-29) | `scripts/smoke_test_results.json` |
 | `scripts/v0_2_signoff.py` | **15 PASS / 0 FAIL / 0 SKIP** (2026-06-29) | `scripts/v0_2_signoff_results.json` |
-| `.venv/bin/python -m pytest -q -m fast` | **432 PASS / 79 deselected** | Local fast suite |
-| `ui && npm run test:unit` | **5 PASS** | Gallery selection helpers |
-| `ui && npm run build` | **PASS** (post Phase 11 UI changes) | — |
+| `.venv/bin/python -m pytest -q -m fast` | **434 PASS / 79 deselected** | Local fast suite |
+| `ui && npm run test:unit` | **6 PASS** | Gallery selection helpers |
+| `ui && npm run build` | **PASS** (post filtered selection hardening) | — |
 
 **Release note:** `v0_2_signoff.py` cache-delete checks remove the local `z-image-turbo` cache. Re-download from Models if that card shows NOT CACHED after sign-off.
 

@@ -22,6 +22,7 @@ import {
 import {
   firstGallerySelectionItem,
   rangeGallerySelectionIds,
+  selectGalleryItems,
   selectGalleryPage,
   selectedGalleryItems,
   toggleGallerySelectionId
@@ -45,6 +46,7 @@ export function Gallery() {
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GenerationOutput | null>(null);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
+  const [pendingSelectAllFiltered, setPendingSelectAllFiltered] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +92,8 @@ export function Gallery() {
 
   const selectedItems = useMemo(() => selectedGalleryItems(items, selectedIds), [items, selectedIds]);
   const selectedCount = selectedItems.length;
+  const allFilteredSelected =
+    filteredItems.length > 0 && filteredItems.every((item) => selectedIds.has(item.id));
 
   const pageCount = Math.max(1, Math.ceil(filteredItems.length / GALLERY_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -136,6 +140,18 @@ export function Gallery() {
   const selectPage = () => {
     setSelectedIds((current) => selectGalleryPage(paginatedItems, current));
     setSelectionAnchorId(paginatedItems[0]?.id ?? null);
+  };
+
+  const selectAllFiltered = () => {
+    setSelectedIds((current) => selectGalleryItems(filteredItems, current));
+    setSelectionAnchorId(filteredItems[0]?.id ?? null);
+    setPendingSelectAllFiltered(false);
+    setError(null);
+    setNotice(
+      filteredItems.length === 1
+        ? "Selected 1 filtered output."
+        : `Selected ${filteredItems.length} filtered outputs.`
+    );
   };
 
   const handleToggleSelection = (item: GenerationOutput) => {
@@ -188,6 +204,7 @@ export function Gallery() {
       });
       setPendingDelete(null);
       setPendingBulkDelete(false);
+      setPendingSelectAllFiltered(false);
 
       if (failures.length) {
         setNotice(`Deleted ${deletedIds.size} output(s). ${failures.length} failed.`);
@@ -297,6 +314,13 @@ export function Gallery() {
           <Panel title={outputFeedTitle} className="module-output-panel space-y-4">
             <div className="flex flex-wrap gap-2">
               <GenerateButton onClick={selectPage} label="SELECT PAGE" icon="check_box" variant="ghost" />
+              <GenerateButton
+                onClick={() => setPendingSelectAllFiltered(true)}
+                label={`SELECT ALL FILTERED (${filteredItems.length})`}
+                icon="done_all"
+                variant="ghost"
+                disabled={!filteredItems.length || allFilteredSelected}
+              />
               {selectedCount > 0 ? (
                 <>
                   <GenerateButton
@@ -316,9 +340,14 @@ export function Gallery() {
               ) : null}
             </div>
             <div className="text-xs text-on-surface-variant">
-              Use the checkboxes to select outputs for bulk delete. Shift-click or cmd-click tiles to extend the
-              selection.
+              Use the checkboxes to select outputs for bulk delete. SELECT PAGE selects visible outputs; SELECT ALL
+              FILTERED selects every output matching the current filters and search.
             </div>
+            {notice && !selected ? (
+              <div className="rounded-panel border border-secondary/35 bg-secondary/10 px-4 py-4 text-sm text-secondary">
+                {notice}
+              </div>
+            ) : null}
             {error ? (
               <div className="rounded-panel border border-error/20 bg-error/10 px-4 py-4 text-sm text-on-error-container">
                 {error}
@@ -521,6 +550,18 @@ export function Gallery() {
         >
           <p>This permanently deletes {selectedCount} images and their metadata sidecars.</p>
           <p className="mt-2">This cannot be undone.</p>
+        </ConfirmModal>
+      ) : null}
+      {pendingSelectAllFiltered ? (
+        <ConfirmModal
+          title={`SELECT ${filteredItems.length} FILTERED OUTPUTS?`}
+          confirmLabel="SELECT ALL"
+          tone="neutral"
+          onCancel={() => setPendingSelectAllFiltered(false)}
+          onConfirm={selectAllFiltered}
+        >
+          <p>This selects every output matching the current filters and search, across all pages.</p>
+          <p className="mt-2">No files will be deleted until you confirm a delete action.</p>
         </ConfirmModal>
       ) : null}
     </div>
