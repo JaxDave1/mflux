@@ -44,7 +44,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### v0.4 — `neural-interface-v0.4` (Phase 11)
 - **PNG output:** all generation outputs forced to `.png`; config format selector removed
-- **Gallery UX:** always-visible checkboxes, SELECT PAGE, SELECT ALL FILTERED, bulk delete toolbar; removed BROWSE/SELECT toggle
+- **Gallery UX:** always-visible checkboxes, SELECT PAGE, bulk delete toolbar; removed BROWSE/SELECT toggle
 
 ### Post-v0.4 local hardening
 - **Gallery API:** `DELETE /api/gallery` accepts `ids[]` and returns per-item `deleted` / `failed` results; single-item delete remains compatible.
@@ -79,7 +79,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | `v0_2_signoff.py` | 15 / 0 / 0 | `scripts/v0_2_signoff_results.json` |
 | `smoke_test_neural_interface.py` | 34 / 0 / 0 | `scripts/smoke_test_results.json` |
 | `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: filtered 2 synthetic outputs, SELECT ALL FILTERED, confirmed selection, deleted files |
-| `npm run build` | PASS | post filtered selection hardening |
+| `npm run build` | PASS | post-v0.4 filtered selection hardening |
 | `.venv/bin/python -m pytest -q -m fast` | 434 PASS / 79 deselected | Includes PNG output policy and Gallery batch delete coverage |
 | `npm run test:unit` | 6 PASS | Gallery selection helper coverage, including filtered selection |
 

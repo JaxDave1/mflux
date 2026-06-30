@@ -53,10 +53,10 @@ git tag -a neural-interface-v0.4 -m "MFLUX Neural Interface v0.4"
 git push origin codex/workspace-cleanup-snapshot --tags
 ```
 
-## Gallery bulk delete (v0.4)
+## Gallery bulk delete (v0.4 + post-v0.4 hardening)
 
-1. Check boxes on tiles (top-left), or use **SELECT PAGE** for visible outputs.
-2. Use **SELECT ALL FILTERED** to select every output matching the current filter/search across pages; confirm the selection first.
+1. Check boxes on tiles (top-left), or use **SELECT PAGE** for visible outputs (v0.4).
+2. Use **SELECT ALL FILTERED** to select every output matching the current filter/search across pages; confirm the selection first (post-v0.4 hardening).
 3. Click **DELETE SELECTED (N)** and confirm the delete.
 4. Shift-click / cmd-click tiles to extend selection without checkboxes.
 
@@ -72,5 +72,5 @@ All generation jobs write **PNG** files. The Config output-format control was re
 | MLX Runtime shows 0 | Normal when idle; rises during active generation |
 | Model Disk Cache large | Sum of cached built-in HF repos (FLUX + Z-Image, etc.) |
 | Gallery page resets on delete | Fixed v0.3 — stay on page or clamp to last valid page |
-| Cannot multi-delete | v0.4 — use checkboxes, SELECT PAGE, or SELECT ALL FILTERED; BROWSE/SELECT toggle removed |
+| Cannot multi-delete | v0.4 + hardening — use checkboxes, SELECT PAGE, or SELECT ALL FILTERED; BROWSE/SELECT toggle removed |
 | Output saved as JPG/WebP | v0.4 — paths normalized to `.png` in `mflux_cli.py` |

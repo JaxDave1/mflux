@@ -62,7 +62,7 @@ Original v0.2 multi-select existed but required BROWSE→SELECT mode or modifier
 | `scripts/v0_2_signoff.py` | **15 PASS / 0 FAIL / 0 SKIP** (2026-06-29) | `scripts/v0_2_signoff_results.json` |
 | `.venv/bin/python -m pytest -q -m fast` | **434 PASS / 79 deselected** | Local fast suite |
 | `ui && npm run test:unit` | **6 PASS** | Gallery selection helpers |
-| `ui && npm run build` | **PASS** (post filtered selection hardening) | — |
+| `ui && npm run build` | **PASS** (post-v0.4 filtered selection hardening) | — |
 
 **Release note:** `v0_2_signoff.py` cache-delete checks remove the local `z-image-turbo` cache. Re-download from Models if that card shows NOT CACHED after sign-off.
 
