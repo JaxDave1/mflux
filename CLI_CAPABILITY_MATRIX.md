@@ -59,4 +59,6 @@ Completed in v0.2: CivitAI download, cache delete, quantized export, gallery fav
 
 **v0.3:** Dashboard runtime truth, job cancel fixes, gallery pagination on delete, CivitAI/export validation E2E.
 
-**v0.4 (Phase 11):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete. Post-v0.4 local hardening adds the batch Gallery delete API, SELECT ALL FILTERED, and browser smoke. See `PHASE_11_V0_4.md` and `GROK_AGENT_NOTES.md`.
+**v0.4 (Phase 11):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete.
+
+**v0.5 (Phase 12):** Batch `DELETE /api/gallery`, SELECT ALL FILTERED, bulk-delete guardrails, `useStickyState` nav retention. See `PHASE_12_V0_5.md`.

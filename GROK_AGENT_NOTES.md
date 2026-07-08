@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-06-30 after post-v0.4 navigation state hardening.
+Living reference for AI agents working on this repo. Updated 2026-06-24 for `neural-interface-v0.5` release.
 
 ---
 
@@ -10,9 +10,8 @@ Living reference for AI agents working on this repo. Updated 2026-06-30 after po
 |---|---|
 | **Repo path** | `/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/` |
 | **Branch** | `codex/workspace-cleanup-snapshot` |
-| **Latest tag** | `neural-interface-v0.4` |
-| **Latest validated phase** | Phase 11 — PNG output + gallery multi-delete UX |
-| **Latest local hardening** | Gallery batch delete API + filtered bulk selection + bulk-action guardrails + section state retention |
+| **Latest tag** | `neural-interface-v0.5` |
+| **Latest validated phase** | Phase 12 — gallery batch API + SELECT ALL FILTERED + nav state |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -46,13 +45,11 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 - **PNG output:** all generation outputs forced to `.png`; config format selector removed
 - **Gallery UX:** always-visible checkboxes, SELECT PAGE, bulk delete toolbar; removed BROWSE/SELECT toggle
 
-### Post-v0.4 local hardening
-- **Gallery API:** `DELETE /api/gallery` accepts `ids[]` and returns per-item `deleted` / `failed` results; single-item delete remains compatible.
-- **Gallery UI:** bulk delete toolbar now uses one batch API request while preserving existing pagination, selection, favorite, and partial-failure behavior.
-- **Gallery selection:** SELECT ALL FILTERED opens a neutral confirmation modal, then selects every output matching the current filter/search across pages.
-- **Gallery guardrails:** per-tile delete buttons are hidden while multiple outputs are selected, so bulk-delete state cannot be confused with single-tile delete.
-- **Navigation state:** generation controls, LoRA stacks, Gallery filter/search/page, and Models controls stay in memory while moving between sections.
-- **Validation:** browser bulk-delete smoke plus API smoke cover batch deletion; API smoke now cancels the generation job before checking SSE so the stream returns from a terminal state.
+### v0.5 — `neural-interface-v0.5` (Phase 12)
+- **Gallery API:** `DELETE /api/gallery` accepts `ids[]` with per-item `deleted` / `failed` results.
+- **Gallery UI:** batch delete endpoint, **SELECT ALL FILTERED**, hide per-tile delete during multi-select.
+- **Navigation state:** `useStickyState` retains generation/Gallery/Models controls across route changes (not full reload).
+- **Validation:** `test_gallery_batch_delete.py`, smoke 34 PASS, browser smokes for bulk delete + nav state.
 
 ---
 
@@ -69,7 +66,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | Config UI | `ui/src/pages/Config.tsx` |
 | Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
 | Ops | `NEURAL_INTERFACE_RUNBOOK.md` |
-| Phase orders | `PHASE_8_V0_2.md` … `PHASE_11_V0_4.md` |
+| Phase orders | `PHASE_8_V0_2.md` … `PHASE_12_V0_5.md` |
 
 ---
 
@@ -90,11 +87,11 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ---
 
-## 5. Git state (2026-06-30)
+## 5. Git state (2026-06-24)
 
-**Committed:** Phase 11 v0.4 checkpoint, release-doc refresh, Gallery bulk-delete browser smoke, Gallery batch-delete API hardening, filtered selection hardening, bulk-action guardrails, and section state retention are local on `codex/workspace-cleanup-snapshot`.
+**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.5`
 
-**Push:** `git push origin codex/workspace-cleanup-snapshot --tags` failed previously (no GitHub credentials in agent environment). User must push manually.
+**Push:** `git push origin codex/workspace-cleanup-snapshot --tags` — requires GitHub credentials; remote is `filipstrand/mflux` (use your fork remote if upstream push is not permitted).
 
 ---
 
@@ -112,7 +109,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Push local work** — Push `codex/workspace-cleanup-snapshot` and `neural-interface-v0.4` when GitHub credentials are available.
+1. **Confirm push** — Verify `codex/workspace-cleanup-snapshot` and tags `v0.2`–`v0.5` reached the intended remote.
 
 ### Medium priority
 
@@ -150,9 +147,9 @@ git push origin codex/workspace-cleanup-snapshot --tags
 - `CHANGELOG.md` — release history
 - `CLI_CAPABILITY_MATRIX.md` — API/UI capability status
 - `AGENTS.md` — pointer to Cursor rules + this file
-- `PHASE_11_V0_4.md` — latest completed phase spec
+- `PHASE_12_V0_5.md` — latest completed phase spec
 
 ---
 
 **Maintainer:** David Hendricks
-**Last updated by:** Codex (2026-06-30)
+**Last updated by:** Grok (2026-06-24)

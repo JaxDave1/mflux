@@ -7,16 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**Gallery delete hardening**
+---
+
+## [neural-interface-v0.5] - 2026-06-24
+
+### MFLUX Neural Interface v0.5
+
+**Gallery delete hardening (Phase 12)**
 - Added `DELETE /api/gallery` batch delete with an `ids[]` body and per-item `deleted` / `failed` results.
 - Gallery bulk-delete UI now uses the batch endpoint instead of looping over single-item deletes.
 - Added **SELECT ALL FILTERED** on Gallery with a confirmation step, selecting every output matching the current filter/search across pages.
 - Hid per-tile delete actions while multiple Gallery outputs are selected so the bulk-delete path stays unambiguous.
-- Preserved in-session section state across navigation for generation controls, LoRA stacks, Gallery filters, and Models controls.
+- Preserved in-session section state across navigation for generation controls, LoRA stacks, Gallery filters, and Models controls (`useStickyState`).
 - Added focused pytest coverage for batch delete success and stale/missing IDs.
 - Extended `smoke_test_neural_interface.py` with direct batch delete coverage and reordered the SSE smoke check to avoid blocking on a running job stream.
 - Extended `gallery_bulk_delete_browser_smoke.mjs` to cover filtered selection and hidden tile deletes before batch delete.
 - Added `navigation_state_browser_smoke.mjs` to verify controls survive client-side route changes.
+
+See `PHASE_12_V0_5.md`.
+
+---
 
 ## [neural-interface-v0.4] - 2026-06-29
 

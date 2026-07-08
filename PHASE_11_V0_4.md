@@ -49,7 +49,7 @@ Original v0.2 multi-select existed but required BROWSE→SELECT mode or modifier
 
 **Automated coverage:** `ui/tests/gallerySelection.test.mjs` verifies page selection, full-gallery selected item counting, range selection, toggle immutability, and first selected reveal ordering.
 
-**Post-v0.4 hardening:** Gallery now also supports **SELECT ALL FILTERED** with a neutral confirmation modal, selecting every output matching the current filter/search across pages.
+**Follow-on:** Phase 12 (`PHASE_12_V0_5.md`) — batch gallery delete API, SELECT ALL FILTERED, nav state; tag `neural-interface-v0.5`.
 
 ---
 
