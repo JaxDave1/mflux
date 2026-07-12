@@ -92,6 +92,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | `smoke_test_neural_interface.py` | 38 PASS | `scripts/smoke_test_results.json` |
 | `gallery_bulk_delete_browser_smoke.mjs` | PASS | filtered bulk delete E2E |
 | `navigation_state_browser_smoke.mjs` | PASS | sticky state across routes |
+| `screenshot_regression.mjs` | PASS | Dashboard + Txt2Img ≤1% pixel diff |
 | `npm run build` | PASS | 13 nav modules |
 | `npm run test:unit` | 6 PASS | gallery selection helpers |
 
@@ -123,10 +124,6 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 7. Recommendations
 
-### Medium priority
-
-1. **Screenshot regression set** — Manual capture for Dashboard + one generation module (P2 from sign-off).
-
 ### Low priority
 
 2. **`flux2-klein-4b` / `fibo-edit` cache** — Re-download for live edit E2E when validation shows SKIP.
@@ -147,6 +144,7 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/design_signoff.py
 node scripts/gallery_bulk_delete_browser_smoke.mjs
 node scripts/navigation_state_browser_smoke.mjs
+node scripts/screenshot_regression.mjs
 cd ui && npm run build
 
 git push fork codex/workspace-cleanup-snapshot --tags

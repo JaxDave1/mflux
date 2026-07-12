@@ -44,6 +44,7 @@ See `PHASE_14_FIBO_EDIT.md`.
 - [x] Gallery bulk-delete partial failure lists all error messages
 - [x] `README.md` Neural Interface section
 - [x] Browser smokes + `v0_2_signoff.py` re-run at tag time
+- [x] Screenshot regression baselines (Dashboard + Txt2Img) — `scripts/screenshot_regression.mjs`
 
 ---
 

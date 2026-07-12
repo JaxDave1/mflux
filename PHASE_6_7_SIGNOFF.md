@@ -44,7 +44,26 @@
 |---|---|
 | Typography/spacing not pixel-re-measured per §2–§3 | Tokens and Tailwind classes match lock; no user-reported drift |
 | Generation modules marked PARTIAL in Pass 2 audit | Shell + components verified; full typographic audit deferred |
-| Owner Klein Edit live-run screenshot | Functional parity confirmed in code review; optional manual capture |
+| Owner Klein Edit live-run screenshot | Covered by Txt2Img + Dashboard screenshot regression baselines |
+
+---
+
+## Screenshot regression (P2)
+
+Baselines at `scripts/screenshot_regression/baselines/`:
+
+| Surface | Route | Baseline |
+|---|---|---|
+| Dashboard | `/` | `dashboard.png` |
+| Txt2Img | `/txt2img` | `txt2img.png` |
+
+```bash
+./scripts/dev.sh   # UI + API required
+node scripts/screenshot_regression.mjs --update   # refresh baselines after intentional visual change
+node scripts/screenshot_regression.mjs            # compare (≤1% pixel diff)
+```
+
+Volatile metrics are stabilized in-browser before capture (telemetry counts, gallery totals, prompt text).
 
 ---
 
@@ -53,6 +72,7 @@
 ```bash
 cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/design_signoff.py
+node scripts/screenshot_regression.mjs
 cd ui && npm run build
 ```
 
@@ -60,7 +80,7 @@ cd ui && npm run build
 
 ## Owner attestation
 
-> Phase 6/7 visual sign-off complete against `DESIGN_LOCK.md`. Mirror Blue material system is consistent across all routes. No §11 forbidden patterns ship. Open items reduced to optional screenshot regression (P2).
+> Phase 6/7 visual sign-off complete against `DESIGN_LOCK.md`. Mirror Blue material system is consistent across all routes. No §11 forbidden patterns ship. Screenshot regression baselines committed (Dashboard + Txt2Img).
 
 **Signed:** David Hendricks  
 **Date:** 2026-07-12

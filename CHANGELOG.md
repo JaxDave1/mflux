@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### MFLUX Neural Interface — post-v0.7
 
-_No tracked changes yet._
+**Screenshot regression (Phase 6/7 P2)**
+- `scripts/screenshot_regression.mjs` — headless capture + Pillow pixel-diff for Dashboard and Txt2Img.
+- Baselines committed under `scripts/screenshot_regression/baselines/`.
 
 ---
 

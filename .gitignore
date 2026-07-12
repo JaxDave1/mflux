@@ -10,6 +10,7 @@
 .venv
 *.lock  # created by uv sync
 *.png
+!scripts/screenshot_regression/baselines/*.png
 *.jpg
 *.pyc
 *.safetensors

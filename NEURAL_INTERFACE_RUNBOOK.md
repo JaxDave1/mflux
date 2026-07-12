@@ -28,10 +28,20 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/design_signoff.py
 node scripts/gallery_bulk_delete_browser_smoke.mjs
 node scripts/navigation_state_browser_smoke.mjs
+node scripts/screenshot_regression.mjs
 cd ui && npm run build
 ```
 
 Browser smokes require the UI dev server to be running and launch headless Chrome/Chromium. `gallery_bulk_delete_browser_smoke.mjs` also requires the API server. Set `CHROME_BIN` if Chrome is not installed in a standard location.
+
+### Screenshot regression (Dashboard + Txt2Img)
+
+```bash
+node scripts/screenshot_regression.mjs              # compare to baselines (≤1% diff)
+node scripts/screenshot_regression.mjs --update     # refresh baselines after intentional visual changes
+```
+
+Baselines live in `scripts/screenshot_regression/baselines/`. Requires UI + API (`./scripts/dev.sh`).
 
 ### Validation env vars
 

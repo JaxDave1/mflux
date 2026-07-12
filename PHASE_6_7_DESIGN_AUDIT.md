@@ -66,7 +66,7 @@
 
 | Priority | Item |
 |---|---|
-| P2 | Screenshot regression set (manual) for Dashboard + one generation module |
+| ~~P2~~ | ~~Screenshot regression set~~ — done (`scripts/screenshot_regression.mjs`, baselines committed) |
 | P3 | Nav rail grouping if module count exceeds 14 |
 
 ---
