@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-07-12 after fork push (`fe0065d`).
+Living reference for AI agents working on this repo. Updated 2026-07-12 for `neural-interface-v0.6` release.
 
 ---
 
@@ -10,8 +10,8 @@ Living reference for AI agents working on this repo. Updated 2026-07-12 after fo
 |---|---|
 | **Repo path** | `/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/` |
 | **Branch** | `codex/workspace-cleanup-snapshot` |
-| **Latest tag** | `neural-interface-v0.5` |
-| **Latest validated phase** | Phase 12 — gallery batch API + SELECT ALL FILTERED + nav state |
+| **Latest tag** | `neural-interface-v0.6` |
+| **Latest validated phase** | Phase 13 — FLUX.2 Klein Edit + design audit |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -51,6 +51,12 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 - **Navigation state:** `useStickyState` retains generation/Gallery/Models controls across route changes (not full reload).
 - **Validation:** `test_gallery_batch_delete.py`, smoke 34 PASS, browser smokes for bulk delete + nav state.
 
+### v0.6 — `neural-interface-v0.6` (Phase 13)
+- **Klein Edit:** `flux2_edit` job module + `/flux2-edit` UI (primary + optional secondary reference images).
+- **Models:** Klein 4B/9B/base allowlist; PNG output policy; Gallery handoff.
+- **Design audit:** `PHASE_6_7_DESIGN_AUDIT.md` Pass 2 summary (owner visual sign-off still open).
+- **Ops:** Fork push complete on `JaxDave1/mflux`.
+
 ---
 
 ## 3. Key file map
@@ -66,7 +72,8 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | Config UI | `ui/src/pages/Config.tsx` |
 | Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
 | Ops | `NEURAL_INTERFACE_RUNBOOK.md` |
-| Phase orders | `PHASE_8_V0_2.md` … `PHASE_12_V0_5.md` |
+| Klein Edit | `ui/src/pages/Flux2Edit.tsx`, `api/services/mflux_cli.py` (`_flux2_edit_command`) |
+| Phase orders | `PHASE_8_V0_2.md` … `PHASE_13_V0_6.md` |
 
 ---
 
@@ -89,7 +96,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 5. Git state (2026-07-12)
 
-**Branch:** `codex/workspace-cleanup-snapshot` · **HEAD:** `fe0065d` · **Tags on fork:** `neural-interface-v0.2`–`v0.5`
+**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.6` · **Tags on fork:** `neural-interface-v0.2`–`v0.6` (push after tag commit)
 
 **Fork (pushed):** [github.com/JaxDave1/mflux](https://github.com/JaxDave1/mflux) — `git remote fork`
 
@@ -111,11 +118,12 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Tag v0.6?** — Klein Edit (Phase 13) + design audit are in `[Unreleased]`; tag after owner sign-off or ship as `neural-interface-v0.6`.
+1. **Phase 6/7 owner sign-off** — Formal visual review per `PHASE_6_7_DESIGN_AUDIT.md` / `DESIGN_LOCK.md`.
 
 ### Medium priority
 
 2. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
+3. **FIBO Edit module** — Next generation surface after Klein Edit.
 
 ### Low priority / corrections
 
@@ -138,7 +146,7 @@ node scripts/gallery_bulk_delete_browser_smoke.mjs
 node scripts/navigation_state_browser_smoke.mjs
 cd ui && npm run build
 
-git push origin codex/workspace-cleanup-snapshot --tags
+git push fork codex/workspace-cleanup-snapshot --tags
 ```
 
 ---
@@ -149,9 +157,10 @@ git push origin codex/workspace-cleanup-snapshot --tags
 - `CHANGELOG.md` — release history
 - `CLI_CAPABILITY_MATRIX.md` — API/UI capability status
 - `AGENTS.md` — pointer to Cursor rules + this file
-- `PHASE_12_V0_5.md` — latest completed phase spec
+- `PHASE_13_V0_6.md` — latest completed phase spec
+- `PHASE_6_7_DESIGN_AUDIT.md` — design Pass 2 audit
 
 ---
 
 **Maintainer:** David Hendricks
-**Last updated by:** Grok (2026-06-24)
+**Last updated by:** Grok (2026-07-12)

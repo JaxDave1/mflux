@@ -1,8 +1,8 @@
 # Phase 13 — FLUX.2 Klein Edit Module
 
-**Status:** Complete (2026-06-24)  
+**Status:** Complete (2026-07-12)  
 **Depends on:** Phase 11+  
-**Tag:** pending — ship with next neural-interface release
+**Tag:** `neural-interface-v0.6` — see `PHASE_13_V0_6.md`
 
 ---
 

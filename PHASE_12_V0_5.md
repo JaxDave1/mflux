@@ -71,5 +71,9 @@
 
 ---
 
+**Follow-on:** Phase 13 (`PHASE_13_V0_6.md`) — FLUX.2 Klein Edit module, design audit; tag `neural-interface-v0.6`.
+
+---
+
 **Phase owner:** David Hendricks
 **Drafted:** 2026-06-24

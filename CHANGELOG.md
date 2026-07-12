@@ -7,18 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### MFLUX Neural Interface — post-v0.5
+### MFLUX Neural Interface — post-v0.6
+
+_No tracked changes yet._
+
+---
+
+## [neural-interface-v0.6] - 2026-07-12
+
+### MFLUX Neural Interface v0.6
 
 **FLUX.2 Klein Edit (Phase 13)**
 - New job module `flux2_edit` wrapping `mflux-generate-flux2-edit`.
 - UI route `/flux2-edit` with primary + optional secondary reference images.
 - Klein 4B/9B/base model allowlist; no negative prompt (matches upstream CLI).
+- Nav rail entry, JobPanel labels, Gallery handoff, `useStickyState` controls.
+- PNG output policy test coverage for `flux2_edit`.
 
 **Design audit (Phase 6/7)**
 - `PHASE_6_7_DESIGN_AUDIT.md` — Pass 2 audit summary; owner visual sign-off still open.
 
 **Ops**
 - GitHub fork: `https://github.com/JaxDave1/mflux` — branch `codex/workspace-cleanup-snapshot` and tags `neural-interface-v0.2`–`v0.5` pushed (2026-07-12).
+
+See `PHASE_13_V0_6.md`.
 
 ---
 

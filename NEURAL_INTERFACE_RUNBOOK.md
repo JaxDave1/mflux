@@ -2,7 +2,7 @@
 
 Local UI: `http://127.0.0.1:4173/` · API: `http://127.0.0.1:8189/`
 
-**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_13_FLUX2_EDIT.md` · **Fork:** [JaxDave1/mflux](https://github.com/JaxDave1/mflux) (`codex/workspace-cleanup-snapshot`, tags `v0.2`–`v0.5` pushed 2026-07-12)
+**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_13_V0_6.md` (v0.6) · **Fork:** [JaxDave1/mflux](https://github.com/JaxDave1/mflux)
 
 ## Start
 
@@ -49,6 +49,7 @@ Vault keys (Config → API Keys): `hf`, `civitai`
 | `neural-interface-v0.3` | Shipped on `3940960` |
 | `neural-interface-v0.4` | Phase 11 — PNG output + gallery multi-delete UX |
 | `neural-interface-v0.5` | Phase 12 — gallery batch API, SELECT ALL FILTERED, nav state |
+| `neural-interface-v0.6` | Phase 13 — FLUX.2 Klein Edit module + design audit |
 
 ```bash
 # Fork remote: https://github.com/JaxDave1/mflux
@@ -59,7 +60,7 @@ git push fork codex/workspace-cleanup-snapshot --tags        # re-run after new 
 # git push origin codex/workspace-cleanup-snapshot --tags
 ```
 
-Branch and `neural-interface-v0.2`–`v0.5` tags were pushed 2026-07-12. Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
+Tags `neural-interface-v0.2`–`v0.6` on fork. Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
 
 ## Gallery bulk delete (v0.4 + post-v0.4 hardening)
 
