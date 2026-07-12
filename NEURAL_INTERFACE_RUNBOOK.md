@@ -2,7 +2,7 @@
 
 Local UI: `http://127.0.0.1:4173/` · API: `http://127.0.0.1:8189/`
 
-**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_14_V0_7.md` (v0.7) · **Fork:** [JaxDave1/mflux](https://github.com/JaxDave1/mflux)
+**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_15_V0_8.md` (v0.8) · **Fork:** [JaxDave1/mflux](https://github.com/JaxDave1/mflux)
 
 ## Start
 
@@ -62,17 +62,18 @@ Vault keys (Config → API Keys): `hf`, `civitai`
 | `neural-interface-v0.5` | Phase 12 — gallery batch API, SELECT ALL FILTERED, nav state |
 | `neural-interface-v0.6` | Phase 13 — FLUX.2 Klein Edit module + design audit |
 | `neural-interface-v0.7` | Phase 14 — FIBO Edit + design sign-off + validation hardening |
+| `neural-interface-v0.8` | Phase 15 — screenshot regression + fork `main` fast-forward |
 
 ```bash
 # Fork remote: https://github.com/JaxDave1/mflux
 git remote add fork https://github.com/JaxDave1/mflux.git   # once
-git push fork codex/workspace-cleanup-snapshot --tags        # re-run after new commits/tags
+git push fork main --tags                                    # default branch carries Neural Interface
 
 # Upstream (filipstrand/mflux) — only if you have push access:
 # git push origin codex/workspace-cleanup-snapshot --tags
 ```
 
-Tags `neural-interface-v0.2`–`v0.7` on fork. Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
+Tags `neural-interface-v0.2`–`v0.8` on fork. Default branch `main` tracks latest Neural Interface.
 
 ## Gallery bulk delete (v0.4 + post-v0.4 hardening)
 

@@ -42,7 +42,7 @@ Validate after changes:
 cd ui && npm run build
 ```
 
-Latest release line: `neural-interface-v0.7` (see [`CHANGELOG.md`](CHANGELOG.md)).
+Latest release line: `neural-interface-v0.8` (see [`CHANGELOG.md`](CHANGELOG.md)).
 
 ---
 

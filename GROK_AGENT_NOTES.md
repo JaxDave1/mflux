@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-07-12 for `neural-interface-v0.7` release.
+Living reference for AI agents working on this repo. Updated 2026-07-12 for `neural-interface-v0.8` release.
 
 ---
 
@@ -10,8 +10,8 @@ Living reference for AI agents working on this repo. Updated 2026-07-12 for `neu
 |---|---|
 | **Repo path** | `/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/` |
 | **Branch** | `codex/workspace-cleanup-snapshot` |
-| **Latest tag** | `neural-interface-v0.7` |
-| **Latest validated phase** | Phase 14 — FIBO Edit + design sign-off + validation hardening |
+| **Latest tag** | `neural-interface-v0.8` |
+| **Latest validated phase** | Phase 15 — screenshot regression + fork `main` fast-forward |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -61,6 +61,10 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 - **Design sign-off:** `PHASE_6_7_SIGNOFF.md`, `LONG_RUNNING_JOB_UX.md`, `SurfaceLoadingState`, `design_signoff.py`.
 - **Validation:** edit-module E2E hooks in `validation_pass.py`; gallery partial-delete error listing; README section.
 
+### v0.8 — `neural-interface-v0.8` (Phase 15)
+- **Screenshot regression:** `scripts/screenshot_regression.mjs` — Dashboard + Txt2Img baselines (≤1% pixel diff).
+- **Fork default branch:** `main` fast-forwarded to feature branch.
+
 ---
 
 ## 3. Key file map
@@ -104,7 +108,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 5. Git state (2026-07-12)
 
-**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.7`
+**Branch:** `main` (also `codex/workspace-cleanup-snapshot`) · **Tag:** `neural-interface-v0.8`
 
 **Fork (pushed):** [github.com/JaxDave1/mflux](https://github.com/JaxDave1/mflux) — `git remote fork`
 

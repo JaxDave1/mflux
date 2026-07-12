@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### MFLUX Neural Interface — post-v0.7
+---
+
+## [neural-interface-v0.8] - 2026-07-12
+
+### MFLUX Neural Interface v0.8
 
 **Screenshot regression (Phase 6/7 P2)**
-- `scripts/screenshot_regression.mjs` — headless capture + Pillow pixel-diff for Dashboard and Txt2Img.
-- Baselines committed under `scripts/screenshot_regression/baselines/`.
+- `scripts/screenshot_regression.mjs` — headless Chrome CDP capture + Pillow pixel-diff (≤1% tolerance).
+- Baselines for Dashboard and Txt2Img under `scripts/screenshot_regression/baselines/`.
+- Volatile telemetry/prompt fields stabilized before capture.
+
+**Release housekeeping**
+- Fork `main` fast-forwarded to `codex/workspace-cleanup-snapshot` (Neural Interface now default branch).
+
+See `PHASE_15_V0_8.md`.
 
 ---
 
