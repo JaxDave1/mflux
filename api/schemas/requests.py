@@ -78,6 +78,30 @@ class InpaintRequest(BaseModel):
     loraScales: list[float] = Field(default_factory=list)
 
 
+class Flux2EditRequest(BaseModel):
+    prompt: str = Field(min_length=1)
+    model: str
+    imagePaths: list[str] = Field(min_length=1, max_length=4)
+    quantize: int | None = Field(default=None, ge=3, le=8)
+    width: int = Field(default=1024, ge=256, le=2048)
+    height: int = Field(default=1024, ge=256, le=2048)
+    steps: int = Field(default=4, ge=1, le=100)
+    guidance: float | None = Field(default=None, ge=0)
+    seed: int | None = None
+    output: str | None = None
+    metadata: bool = True
+    loraPaths: list[str] = Field(default_factory=list)
+    loraScales: list[float] = Field(default_factory=list)
+
+    @field_validator("imagePaths")
+    @classmethod
+    def _require_image_paths(cls, value: list[str]) -> list[str]:
+        normalized = [path.strip() for path in value if path and path.strip()]
+        if not normalized:
+            raise ValueError("At least one image path is required")
+        return normalized
+
+
 class KontextRequest(BaseModel):
     prompt: str = Field(min_length=1)
     model: str
@@ -162,6 +186,7 @@ class JobCreateRequest(BaseModel):
     module: Literal[
         "txt2img",
         "img2img",
+        "flux2_edit",
         "inpaint",
         "controlnet",
         "kontext",

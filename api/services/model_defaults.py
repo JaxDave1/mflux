@@ -33,6 +33,7 @@ MODEL_ALIASES = {
 MODULE_DEFAULT_MODEL: dict[str, str] = {
     "txt2img": "z-image-turbo",
     "img2img": "z-image-turbo",
+    "flux2_edit": "flux2-klein-4b",
     "inpaint": "fill-dev",
     "controlnet": "controlnet-dev",
     "kontext": "dev-kontext",

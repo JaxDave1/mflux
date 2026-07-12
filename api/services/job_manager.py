@@ -21,6 +21,7 @@ from api.schemas.requests import (
     CivitaiDownloadRequest,
     ControlNetRequest,
     DepthProRequest,
+    Flux2EditRequest,
     Img2ImgRequest,
     InpaintRequest,
     KontextRequest,
@@ -44,6 +45,7 @@ from api.services.mflux_cli import (
     _base_env,
     _controlnet_command,
     _depth_pro_command,
+    _flux2_edit_command,
     _generic_output_path,
     _img2img_command,
     _inpaint_command,
@@ -95,6 +97,7 @@ MODEL_DOWNLOAD_REPOS: dict[str, list[str]] = {
 BASELINES: dict[ModuleName, JobBaseline] = {
     "txt2img": JobBaseline(median_ms=17_000, p90_ms=30_000, samples=1),
     "img2img": JobBaseline(median_ms=45_000, p90_ms=90_000, samples=1),
+    "flux2_edit": JobBaseline(median_ms=45_000, p90_ms=90_000, samples=1),
     "upscaler": JobBaseline(median_ms=120_000, p90_ms=180_000, samples=1),
     "depth_pro": JobBaseline(median_ms=20_000, p90_ms=45_000, samples=1),
     "inpaint": JobBaseline(median_ms=480_000, p90_ms=540_000, samples=1),
@@ -112,6 +115,7 @@ BASELINES: dict[ModuleName, JobBaseline] = {
 PROGRESS_PATTERNS: dict[ModuleName, re.Pattern[str] | None] = {
     "txt2img": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
     "img2img": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
+    "flux2_edit": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
     "inpaint": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
     "controlnet": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
     "kontext": re.compile(r"^\s*Step\s+(?P<step>\d+)\s*/\s*(?P<total>\d+)", re.IGNORECASE),
@@ -195,6 +199,7 @@ def _validate_params(module: ModuleName, params: dict) -> BaseModel:
     model_map = {
         "txt2img": Txt2ImgRequest,
         "img2img": Img2ImgRequest,
+        "flux2_edit": Flux2EditRequest,
         "inpaint": InpaintRequest,
         "controlnet": ControlNetRequest,
         "kontext": KontextRequest,
@@ -376,6 +381,12 @@ def _prepare_command(module: ModuleName, params: dict, config: AppConfig) -> Pre
     elif isinstance(request, Img2ImgRequest):
         output = _output_path(config, request)  # type: ignore[arg-type]
         spec = _img2img_command(request, output)
+        prompt = request.prompt
+        model = request.model
+        seed = request.seed or 0
+    elif isinstance(request, Flux2EditRequest):
+        output = _output_path(config, request)  # type: ignore[arg-type]
+        spec = _flux2_edit_command(request, output)
         prompt = request.prompt
         model = request.model
         seed = request.seed or 0

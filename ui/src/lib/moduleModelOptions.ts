@@ -2,7 +2,14 @@ import { isLocallyAvailable } from "./checkpointOptions";
 import { formatModelLabel } from "./labels";
 import type { ModelSummary, ModelsResponse } from "./types";
 
-export type ModuleModelScope = "txt2img" | "img2img" | "inpaint" | "kontext" | "controlnet" | "config";
+export type ModuleModelScope =
+  | "txt2img"
+  | "img2img"
+  | "flux2_edit"
+  | "inpaint"
+  | "kontext"
+  | "controlnet"
+  | "config";
 
 export interface ModuleModelOption {
   value: string;
@@ -39,6 +46,7 @@ const MODULE_MODEL_ALLOWLISTS: Record<ModuleModelScope, readonly string[]> = {
     "flux2-klein-base-4b",
     "flux2-klein-base-9b"
   ],
+  flux2_edit: ["flux2-klein-4b", "flux2-klein-9b", "flux2-klein-base-4b", "flux2-klein-base-9b"],
   inpaint: ["dev-fill", "dev-fill-catvton"],
   kontext: ["dev-kontext"],
   controlnet: ["dev-controlnet-canny", "schnell-controlnet-canny"],

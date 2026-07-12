@@ -502,6 +502,7 @@ export function Gallery() {
                   <div className="grid gap-2 sm:grid-cols-2">
                     {[
                       ["IMG2IMG", "/img2img"],
+                      ["FLUX.2 EDIT", "/flux2-edit"],
                       ["INPAINT", "/inpaint"],
                       ["CONTROLNET", "/controlnet"],
                       ["KONTEXT", "/kontext"],

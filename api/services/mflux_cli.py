@@ -12,6 +12,7 @@ from api.schemas.requests import (
     AppConfig,
     ControlNetRequest,
     DepthProRequest,
+    Flux2EditRequest,
     Img2ImgRequest,
     InpaintRequest,
     KontextRequest,
@@ -202,6 +203,37 @@ def _img2img_command(request: Img2ImgRequest, output: Path) -> CommandSpec:
     if request.loraScales:
         args += ["--lora-scales", *[str(scale) for scale in request.loraScales]]
     return CommandSpec(module=module, args=args)
+
+
+def _flux2_edit_command(request: Flux2EditRequest, output: Path) -> CommandSpec:
+    args = [
+        "--model",
+        request.model,
+        "--prompt",
+        request.prompt,
+        "--width",
+        str(request.width),
+        "--height",
+        str(request.height),
+        "--steps",
+        str(request.steps),
+        "--output",
+        str(output),
+        "--image-paths",
+        *[str(_resolve_path(path)) for path in request.imagePaths],
+    ]
+    _append_guidance_args(args, request.model, request.guidance)
+    if request.quantize is not None:
+        args += ["--quantize", str(request.quantize)]
+    if request.seed is not None:
+        args += ["--seed", str(request.seed)]
+    if request.metadata:
+        args.append("--metadata")
+    if request.loraPaths:
+        args += ["--lora-paths", *request.loraPaths]
+    if request.loraScales:
+        args += ["--lora-scales", *[str(scale) for scale in request.loraScales]]
+    return CommandSpec(module="mflux.models.flux2.cli.flux2_edit_generate", args=args)
 
 
 def _inpaint_command(request: InpaintRequest, output: Path) -> CommandSpec:

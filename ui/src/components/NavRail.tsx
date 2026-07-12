@@ -5,6 +5,7 @@ const navItems = [
   { path: "/", label: "Home", icon: "home" },
   { path: "/txt2img", label: "Txt2Img", icon: "edit_note" },
   { path: "/img2img", label: "Img2Img", icon: "image" },
+  { path: "/flux2-edit", label: "Klein Edit", icon: "edit_square" },
   { path: "/inpaint", label: "Inpaint", icon: "brush" },
   { path: "/controlnet", label: "ControlNet", icon: "settings_input_component" },
   { path: "/kontext", label: "Kontext", icon: "hub" },

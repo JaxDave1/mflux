@@ -141,6 +141,7 @@ export interface AppConfig {
 export type ModuleName =
   | "txt2img"
   | "img2img"
+  | "flux2_edit"
   | "inpaint"
   | "controlnet"
   | "kontext"

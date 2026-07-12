@@ -107,6 +107,7 @@ JobState = Literal["queued", "running", "succeeded", "failed", "cancelled", "tim
 ModuleName = Literal[
     "txt2img",
     "img2img",
+    "flux2_edit",
     "inpaint",
     "controlnet",
     "kontext",

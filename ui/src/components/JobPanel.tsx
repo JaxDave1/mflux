@@ -9,6 +9,7 @@ const terminalJobStates = new Set<JobState>(["succeeded", "failed", "cancelled",
 const moduleLabels: Record<string, string> = {
   txt2img: "Txt2Img",
   img2img: "Img2Img",
+  flux2_edit: "FLUX.2 Edit",
   inpaint: "Inpaint",
   controlnet: "ControlNet",
   kontext: "Kontext",
@@ -22,6 +23,7 @@ const moduleLabels: Record<string, string> = {
 const moduleRoutes: Record<string, string> = {
   txt2img: "/txt2img",
   img2img: "/img2img",
+  flux2_edit: "/flux2-edit",
   inpaint: "/inpaint",
   controlnet: "/controlnet",
   kontext: "/kontext",

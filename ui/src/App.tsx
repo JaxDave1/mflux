@@ -8,6 +8,7 @@ import {
   Dashboard,
   DepthPro,
   Gallery,
+  Flux2Edit,
   Img2Img,
   Inpaint,
   Kontext,
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/txt2img" element={<Txt2Img />} />
         <Route path="/img2img" element={<Img2Img />} />
+        <Route path="/flux2-edit" element={<Flux2Edit />} />
         <Route path="/inpaint" element={<Inpaint />} />
         <Route path="/controlnet" element={<ControlNet />} />
         <Route path="/kontext" element={<Kontext />} />

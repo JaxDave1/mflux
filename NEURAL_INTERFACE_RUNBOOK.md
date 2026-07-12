@@ -51,9 +51,15 @@ Vault keys (Config → API Keys): `hf`, `civitai`
 | `neural-interface-v0.5` | Phase 12 — gallery batch API, SELECT ALL FILTERED, nav state |
 
 ```bash
-git tag -a neural-interface-v0.5 -m "MFLUX Neural Interface v0.5"
-git push origin codex/workspace-cleanup-snapshot --tags
+# Fork remote (created 2026-06-24): https://github.com/JaxDave1/mflux
+git remote add fork https://github.com/JaxDave1/mflux.git   # once
+git push fork codex/workspace-cleanup-snapshot --tags
+
+# Upstream (filipstrand/mflux) — only if you have push access:
+# git push origin codex/workspace-cleanup-snapshot --tags
 ```
+
+Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
 
 ## Gallery bulk delete (v0.4 + post-v0.4 hardening)
 
