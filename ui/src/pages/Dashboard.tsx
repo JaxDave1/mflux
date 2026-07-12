@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "../components";
+import { Icon, SurfaceLoadingState } from "../components";
 import { api } from "../lib/api";
 import { offlineModelsResponse, offlineSystemStatus } from "../lib/fallbacks";
 import { formatModelLabel } from "../lib/labels";
@@ -269,11 +269,8 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="content-shell">
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 font-label text-sm uppercase tracking-[0.18em] text-[#A0B4D0]">
-          <div className="h-9 w-9 rounded-full border border-secondary/25 border-t-secondary animate-spin" />
-          <div>Dashboard Loading</div>
-        </div>
+      <div className="content-shell flex min-h-[60vh] items-center justify-center">
+        <SurfaceLoadingState label="INITIALIZING DASHBOARD" />
       </div>
     );
   }

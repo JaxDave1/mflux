@@ -38,7 +38,7 @@ See also `PHASE_13_FLUX2_EDIT.md` (module checklist).
 
 - [x] `PHASE_6_7_DESIGN_AUDIT.md` — Pass 2 audit summary per `DESIGN_LOCK.md`
 - [x] Dashboard PASS; generation modules / Gallery / Models / Config PARTIAL
-- [ ] Owner visual sign-off against §1–§11 (non-blocking)
+- [x] Owner visual sign-off against §1–§11 — `PHASE_6_7_SIGNOFF.md` (2026-07-12)
 
 ---
 

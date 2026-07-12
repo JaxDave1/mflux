@@ -54,7 +54,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 ### v0.6 — `neural-interface-v0.6` (Phase 13)
 - **Klein Edit:** `flux2_edit` job module + `/flux2-edit` UI (primary + optional secondary reference images).
 - **Models:** Klein 4B/9B/base allowlist; PNG output policy; Gallery handoff.
-- **Design audit:** `PHASE_6_7_DESIGN_AUDIT.md` Pass 2 summary (owner visual sign-off still open).
+- **Design audit:** `PHASE_6_7_SIGNOFF.md` — owner visual sign-off complete (2026-07-12).
 - **Ops:** Fork push complete on `JaxDave1/mflux`.
 
 ---
@@ -118,12 +118,12 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Phase 6/7 owner sign-off** — Formal visual review per `PHASE_6_7_DESIGN_AUDIT.md` / `DESIGN_LOCK.md`.
+1. **FIBO Edit module** — Next generation surface after Klein Edit.
 
 ### Medium priority
 
 2. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
-3. **FIBO Edit module** — Next generation surface after Klein Edit.
+3. **Screenshot regression set** — Manual capture for Dashboard + one generation module (P2 from sign-off).
 
 ### Low priority / corrections
 
@@ -142,6 +142,7 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/validation_pass.py
 .venv/bin/python scripts/smoke_test_neural_interface.py
 .venv/bin/python scripts/v0_2_signoff.py
+.venv/bin/python scripts/design_signoff.py
 node scripts/gallery_bulk_delete_browser_smoke.mjs
 node scripts/navigation_state_browser_smoke.mjs
 cd ui && npm run build
@@ -158,7 +159,8 @@ git push fork codex/workspace-cleanup-snapshot --tags
 - `CLI_CAPABILITY_MATRIX.md` — API/UI capability status
 - `AGENTS.md` — pointer to Cursor rules + this file
 - `PHASE_13_V0_6.md` — latest completed phase spec
-- `PHASE_6_7_DESIGN_AUDIT.md` — design Pass 2 audit
+- `PHASE_6_7_SIGNOFF.md` — design owner sign-off
+- `LONG_RUNNING_JOB_UX.md` — job UX contract
 
 ---
 

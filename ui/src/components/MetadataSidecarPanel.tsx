@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { formatGallerySidecarJson } from "../lib/gallerySidecar";
 import { GenerateButton } from "./GenerateButton";
+import { SurfaceLoadingState } from "./SurfaceLoadingState";
 
 export function MetadataSidecarPanel({
   itemId,
@@ -100,9 +101,7 @@ export function MetadataSidecarPanel({
               disabled={loading || Boolean(error) || content === null}
             />
           </div>
-          {loading ? (
-            <div className="text-sm text-on-surface-variant">Loading sidecar JSON…</div>
-          ) : null}
+          {loading ? <SurfaceLoadingState label="FETCHING SIDECAR" /> : null}
           {error ? (
             <div className="rounded-panel border border-error/20 bg-error/10 px-3 py-3 text-sm text-on-error-container">
               {error}

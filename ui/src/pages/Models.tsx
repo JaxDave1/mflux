@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { ConfirmModal, GenerateButton, PageHeader, Panel, QuantizeField, SelectField, ToggleChip } from "../components";
+import {
+  ConfirmModal,
+  GenerateButton,
+  PageHeader,
+  Panel,
+  QuantizeField,
+  SelectField,
+  SurfaceLoadingState,
+  ToggleChip
+} from "../components";
 import {
   buildCheckpointOptions,
   checkpointCompatId,
@@ -583,7 +592,7 @@ export function Models() {
 
           {filter === "LORA" && lorasLoading ? (
             <Panel title="LORA LIST">
-              <div className="text-sm text-on-surface-variant">Loading LoRAs for {selectedCheckpointLabel}...</div>
+              <SurfaceLoadingState label={`FETCHING LORAS · ${selectedCheckpointLabel.toUpperCase()}`} />
             </Panel>
           ) : null}
 

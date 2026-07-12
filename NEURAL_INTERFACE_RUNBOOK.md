@@ -25,6 +25,7 @@ cd /Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux
 .venv/bin/python scripts/smoke_test_neural_interface.py
 .venv/bin/python scripts/v0_2_signoff.py
 .venv/bin/python scripts/validation_pass.py
+.venv/bin/python scripts/design_signoff.py
 node scripts/gallery_bulk_delete_browser_smoke.mjs
 node scripts/navigation_state_browser_smoke.mjs
 cd ui && npm run build

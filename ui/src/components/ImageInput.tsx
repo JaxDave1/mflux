@@ -210,7 +210,7 @@ export function ImageInput({
             </span>
             <span className="mt-2 text-sm text-on-surface-variant">
               {uploading
-                ? "Uploading image..."
+                ? "UPLOADING SOURCE"
                 : value
                   ? "Drop a new image here to replace the current source."
                   : "Drop an image here or browse for a local file."}

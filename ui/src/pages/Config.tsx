@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GenerateButton, PageHeader, Panel, SelectField, ToggleChip } from "../components";
+import { GenerateButton, PageHeader, Panel, SelectField, SurfaceLoadingState, ToggleChip } from "../components";
 import { useModuleModelOptions } from "../hooks/useModuleModelOptions";
 import { api } from "../lib/api";
 import type { AppConfig, SecretStatus } from "../lib/types";
@@ -235,7 +235,9 @@ export function Config() {
           description="Path management, generation defaults, and backend settings."
           className="module-reskin-page-header"
         />
-        <Panel title="CONFIG STORE">Loading config...</Panel>
+        <Panel title="CONFIG STORE">
+          <SurfaceLoadingState label="FETCHING CONFIG" />
+        </Panel>
       </div>
     );
   }

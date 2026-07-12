@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import type { LoraSummary } from "../lib/types";
 import { GenerateButton } from "./GenerateButton";
 import { SliderField } from "./SliderField";
+import { SurfaceLoadingState } from "./SurfaceLoadingState";
 
 export interface LoraSelection {
   path: string;
@@ -197,8 +198,8 @@ export function LoRAStack({
         </div>
       ) : null}
       {loading ? (
-        <div className="rounded-panel border border-outline-variant/60 bg-surface-container-low px-3 py-3 text-sm text-on-surface-variant">
-          Loading LoRA library...
+        <div className="rounded-panel border border-outline-variant/60 bg-surface-container-low px-3 py-3">
+          <SurfaceLoadingState label="FETCHING LORA LIBRARY" />
         </div>
       ) : null}
       {!loading && !loras.length && !error ? (

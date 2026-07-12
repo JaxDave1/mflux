@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### MFLUX Neural Interface — post-v0.6
 
-_No tracked changes yet._
+**Phase 6/7 design sign-off**
+- `PHASE_6_7_SIGNOFF.md` — owner visual sign-off complete (2026-07-12).
+- `LONG_RUNNING_JOB_UX.md` — ratified companion to `JOBS_API_SPEC.md`.
+- Removed bare `Loading...` copy; added `SurfaceLoadingState` component.
+- Nav rail scroll for 12 modules; deleted orphan `ModulePage.tsx`.
+- `scripts/design_signoff.py` — automated DESIGN_LOCK guard checks.
 
 ---
 

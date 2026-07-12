@@ -26,7 +26,7 @@ export function NavRail({ className = "" }: { className?: string }) {
           M
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-0 py-1 [scrollbar-width:thin]">
         {navItems.map((item) => (
           <NavLink
             key={item.path}

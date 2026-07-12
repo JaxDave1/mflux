@@ -24,3 +24,4 @@ export * from "./MetadataSidecarPanel";
 export * from "./GalleryPager";
 export * from "./LoraModelNotice";
 export * from "./LivePreviewField";
+export * from "./SurfaceLoadingState";
