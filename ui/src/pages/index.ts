@@ -2,6 +2,7 @@ export * from "./Dashboard";
 export * from "./Txt2Img";
 export * from "./Img2Img";
 export * from "./Flux2Edit";
+export * from "./FiboEdit";
 export * from "./Inpaint";
 export * from "./ControlNet";
 export * from "./Kontext";

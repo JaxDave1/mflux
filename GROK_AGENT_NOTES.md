@@ -73,6 +73,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
 | Ops | `NEURAL_INTERFACE_RUNBOOK.md` |
 | Klein Edit | `ui/src/pages/Flux2Edit.tsx`, `api/services/mflux_cli.py` (`_flux2_edit_command`) |
+| FIBO Edit | `ui/src/pages/FiboEdit.tsx`, `api/services/mflux_cli.py` (`_fibo_edit_command`) |
 | Phase orders | `PHASE_8_V0_2.md` … `PHASE_13_V0_6.md` |
 
 ---
@@ -118,7 +119,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **FIBO Edit module** — Next generation surface after Klein Edit.
+1. **Tag v0.7?** — FIBO Edit (Phase 14) + design sign-off in `[Unreleased]`; tag after push.
 
 ### Medium priority
 

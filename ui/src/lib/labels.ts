@@ -20,6 +20,7 @@ const MODEL_LABEL_OVERRIDES: Record<string, string> = {
   "qwen-image-edit": "Qwen Image Edit",
   "fibo": "FIBO",
   "fibo-edit": "FIBO Edit",
+  "fibo-edit-rmbg": "FIBO Edit RMBG",
   "fibo-lite": "FIBO Lite",
   "flux.1-dev": "FLUX.1 Dev",
   "flux.1-schnell": "FLUX.1 Schnell",

@@ -83,6 +83,7 @@ def test_generic_output_paths_are_always_png(tmp_path: Path):
         ("txt2img", {"prompt": "x", "model": "dev"}),
         ("img2img", {"prompt": "x", "model": "dev", "imagePath": "source.png"}),
         ("flux2_edit", {"prompt": "x", "model": "flux2-klein-4b", "imagePaths": ["source.png"]}),
+        ("fibo_edit", {"prompt": "add glasses", "model": "fibo-edit", "imagePath": "source.png"}),
         ("inpaint", {"prompt": "x", "model": "dev-fill", "imagePath": "source.png", "maskedImagePath": "mask.png"}),
         ("kontext", {"prompt": "x", "model": "dev-kontext", "imagePath": "source.png"}),
         ("controlnet", {"prompt": "x", "model": "dev-controlnet-canny", "controlnetImagePath": "control.png"}),

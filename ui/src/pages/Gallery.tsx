@@ -503,6 +503,7 @@ export function Gallery() {
                     {[
                       ["IMG2IMG", "/img2img"],
                       ["FLUX.2 EDIT", "/flux2-edit"],
+                      ["FIBO EDIT", "/fibo-edit"],
                       ["INPAINT", "/inpaint"],
                       ["CONTROLNET", "/controlnet"],
                       ["KONTEXT", "/kontext"],

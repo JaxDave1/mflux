@@ -19,6 +19,7 @@ MODULE_ROUTES = [
     "Txt2Img.tsx",
     "Img2Img.tsx",
     "Flux2Edit.tsx",
+    "FiboEdit.tsx",
     "Inpaint.tsx",
     "ControlNet.tsx",
     "Kontext.tsx",

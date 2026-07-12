@@ -12,6 +12,7 @@ from api.schemas.requests import (
     AppConfig,
     ControlNetRequest,
     DepthProRequest,
+    FiboEditRequest,
     Flux2EditRequest,
     Img2ImgRequest,
     InpaintRequest,
@@ -203,6 +204,44 @@ def _img2img_command(request: Img2ImgRequest, output: Path) -> CommandSpec:
     if request.loraScales:
         args += ["--lora-scales", *[str(scale) for scale in request.loraScales]]
     return CommandSpec(module=module, args=args)
+
+
+def _fibo_edit_command(request: FiboEditRequest, output: Path) -> CommandSpec:
+    args = [
+        "--model",
+        request.model,
+        "--image-path",
+        str(_resolve_path(request.imagePath)),
+        "--width",
+        str(request.width),
+        "--height",
+        str(request.height),
+        "--steps",
+        str(request.steps),
+        "--output",
+        str(output),
+    ]
+    if request.prompt.strip():
+        args += ["--prompt", request.prompt]
+    if request.maskPath:
+        args += ["--mask-path", str(_resolve_path(request.maskPath))]
+    if request.saveMatte and request.model == "fibo-edit-rmbg":
+        matte_output = _png_output_path(output.with_name(f"{output.stem}_matte{output.suffix or _OUTPUT_SUFFIX}"))
+        args += ["--matte-output", str(matte_output)]
+    _append_guidance_args(args, request.model, request.guidance)
+    if request.quantize is not None:
+        args += ["--quantize", str(request.quantize)]
+    if request.seed is not None:
+        args += ["--seed", str(request.seed)]
+    if request.metadata:
+        args.append("--metadata")
+    if request.negativePrompt:
+        args += ["--negative-prompt", request.negativePrompt]
+    if request.loraPaths:
+        args += ["--lora-paths", *request.loraPaths]
+    if request.loraScales:
+        args += ["--lora-scales", *[str(scale) for scale in request.loraScales]]
+    return CommandSpec(module="mflux.models.fibo.cli.fibo_edit", args=args)
 
 
 def _flux2_edit_command(request: Flux2EditRequest, output: Path) -> CommandSpec:

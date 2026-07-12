@@ -142,6 +142,7 @@ export type ModuleName =
   | "txt2img"
   | "img2img"
   | "flux2_edit"
+  | "fibo_edit"
   | "inpaint"
   | "controlnet"
   | "kontext"

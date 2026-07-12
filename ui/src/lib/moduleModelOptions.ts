@@ -6,6 +6,7 @@ export type ModuleModelScope =
   | "txt2img"
   | "img2img"
   | "flux2_edit"
+  | "fibo_edit"
   | "inpaint"
   | "kontext"
   | "controlnet"
@@ -47,6 +48,7 @@ const MODULE_MODEL_ALLOWLISTS: Record<ModuleModelScope, readonly string[]> = {
     "flux2-klein-base-9b"
   ],
   flux2_edit: ["flux2-klein-4b", "flux2-klein-9b", "flux2-klein-base-4b", "flux2-klein-base-9b"],
+  fibo_edit: ["fibo-edit", "fibo-edit-rmbg"],
   inpaint: ["dev-fill", "dev-fill-catvton"],
   kontext: ["dev-kontext"],
   controlnet: ["dev-controlnet-canny", "schnell-controlnet-canny"],

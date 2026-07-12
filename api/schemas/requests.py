@@ -78,6 +78,33 @@ class InpaintRequest(BaseModel):
     loraScales: list[float] = Field(default_factory=list)
 
 
+class FiboEditRequest(BaseModel):
+    prompt: str = ""
+    model: str
+    imagePath: str = Field(min_length=1)
+    maskPath: str | None = None
+    saveMatte: bool = False
+    quantize: int | None = Field(default=None, ge=3, le=8)
+    width: int = Field(default=1024, ge=256, le=2048)
+    height: int = Field(default=1024, ge=256, le=2048)
+    steps: int = Field(default=50, ge=1, le=100)
+    guidance: float | None = Field(default=None, ge=0)
+    negativePrompt: str | None = None
+    seed: int | None = None
+    output: str | None = None
+    metadata: bool = True
+    loraPaths: list[str] = Field(default_factory=list)
+    loraScales: list[float] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_fibo_edit(self) -> "FiboEditRequest":
+        if self.model != "fibo-edit-rmbg" and not self.prompt.strip():
+            raise ValueError("prompt is required for fibo-edit")
+        if self.saveMatte and self.model != "fibo-edit-rmbg":
+            raise ValueError("saveMatte is only supported for fibo-edit-rmbg")
+        return self
+
+
 class Flux2EditRequest(BaseModel):
     prompt: str = Field(min_length=1)
     model: str
@@ -187,6 +214,7 @@ class JobCreateRequest(BaseModel):
         "txt2img",
         "img2img",
         "flux2_edit",
+        "fibo_edit",
         "inpaint",
         "controlnet",
         "kontext",

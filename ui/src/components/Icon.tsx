@@ -18,6 +18,7 @@ const paths: Record<string, string[]> = {
   monitoring: ["M4 18l5-5 3 3 7-9", "M4 20h16", "M4 14v6"],
   gallery_thumbnail: ["M4 6h9v9H4z", "M15 8h5v5h-5z", "M15 15h5v3h-5z", "M7 12l2-2 2 3"],
   edit_square: ["M5 5h9", "M5 5v14h14v-9", "M10 14l8-8 2 2-8 8h-2v-2z"],
+  auto_fix_high: ["M3 21l9-9", "M12 9l-1 4 4-1 3-6-6 3z", "M15 2l2 2", "M19 6l2 2"],
   image_search: ["M4 5h12v10H4z", "M7 12l2-2 2 2 2-3 3 4", "M17 17l4 4", "M17 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"],
   high_quality: ["M5 6h14v12H5z", "M8 15V9", "M8 12h3", "M11 15V9", "M14 15V9h3v6"],
   progress_activity: ["M12 3a9 9 0 1 0 9 9"],
