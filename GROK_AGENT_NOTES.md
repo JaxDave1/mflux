@@ -96,7 +96,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 5. Git state (2026-07-12)
 
-**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.6` · **Tags on fork:** `neural-interface-v0.2`–`v0.6` (push after tag commit)
+**Branch:** `codex/workspace-cleanup-snapshot` · **HEAD:** `0c4e3d8` · **Tags on fork:** `neural-interface-v0.2`–`v0.6` (pushed 2026-07-12)
 
 **Fork (pushed):** [github.com/JaxDave1/mflux](https://github.com/JaxDave1/mflux) — `git remote fork`
 

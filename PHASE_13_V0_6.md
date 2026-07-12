@@ -45,7 +45,7 @@ See also `PHASE_13_FLUX2_EDIT.md` (module checklist).
 ## 13C — Ops
 
 - [x] Fork branch + `neural-interface-v0.2`–`v0.5` tags pushed to `JaxDave1/mflux`
-- [x] `neural-interface-v0.6` tag on release commit
+- [x] `neural-interface-v0.6` tag on release commit (`0c4e3d8`, pushed 2026-07-12)
 
 ---
 
