@@ -39,7 +39,8 @@
 
 - [x] `NEURAL_INTERFACE_RUNBOOK.md` — start, validate, tag, env vars
 - [x] `neural-interface-v0.3` git tag
-- [x] Fork created: `https://github.com/JaxDave1/mflux` — push via `git push fork codex/workspace-cleanup-snapshot --tags` (requires local GitHub auth)
+- [x] Fork created: `https://github.com/JaxDave1/mflux`
+- [x] Branch + tags pushed (2026-07-12): `codex/workspace-cleanup-snapshot`, `neural-interface-v0.2`–`v0.5` → `fe0065d`
 
 ---
 

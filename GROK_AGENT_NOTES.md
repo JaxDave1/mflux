@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-06-24 for `neural-interface-v0.5` release.
+Living reference for AI agents working on this repo. Updated 2026-07-12 after fork push (`fe0065d`).
 
 ---
 
@@ -87,11 +87,13 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ---
 
-## 5. Git state (2026-06-24)
+## 5. Git state (2026-07-12)
 
-**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.5`
+**Branch:** `codex/workspace-cleanup-snapshot` · **HEAD:** `fe0065d` · **Tags on fork:** `neural-interface-v0.2`–`v0.5`
 
-**Push:** `git push origin codex/workspace-cleanup-snapshot --tags` — requires GitHub credentials; remote is `filipstrand/mflux` (use your fork remote if upstream push is not permitted).
+**Fork (pushed):** [github.com/JaxDave1/mflux](https://github.com/JaxDave1/mflux) — `git remote fork`
+
+**Upstream:** `filipstrand/mflux` (`origin`) — do not push Neural Interface work here unless intended.
 
 ---
 
@@ -109,7 +111,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ### High priority
 
-1. **Confirm push** — Verify `codex/workspace-cleanup-snapshot` and tags `v0.2`–`v0.5` reached the intended remote.
+1. **Tag v0.6?** — Klein Edit (Phase 13) + design audit are in `[Unreleased]`; tag after owner sign-off or ship as `neural-interface-v0.6`.
 
 ### Medium priority
 

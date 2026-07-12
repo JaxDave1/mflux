@@ -2,7 +2,7 @@
 
 Local UI: `http://127.0.0.1:4173/` · API: `http://127.0.0.1:8189/`
 
-**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_12_V0_5.md` (v0.5)
+**Agent reference:** `GROK_AGENT_NOTES.md` · **Latest phase:** `PHASE_13_FLUX2_EDIT.md` · **Fork:** [JaxDave1/mflux](https://github.com/JaxDave1/mflux) (`codex/workspace-cleanup-snapshot`, tags `v0.2`–`v0.5` pushed 2026-07-12)
 
 ## Start
 
@@ -51,15 +51,15 @@ Vault keys (Config → API Keys): `hf`, `civitai`
 | `neural-interface-v0.5` | Phase 12 — gallery batch API, SELECT ALL FILTERED, nav state |
 
 ```bash
-# Fork remote (created 2026-06-24): https://github.com/JaxDave1/mflux
+# Fork remote: https://github.com/JaxDave1/mflux
 git remote add fork https://github.com/JaxDave1/mflux.git   # once
-git push fork codex/workspace-cleanup-snapshot --tags
+git push fork codex/workspace-cleanup-snapshot --tags        # re-run after new commits/tags
 
 # Upstream (filipstrand/mflux) — only if you have push access:
 # git push origin codex/workspace-cleanup-snapshot --tags
 ```
 
-Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
+Branch and `neural-interface-v0.2`–`v0.5` tags were pushed 2026-07-12. Authenticate with GitHub CLI (`gh auth login`) or a personal access token before pushing.
 
 ## Gallery bulk delete (v0.4 + post-v0.4 hardening)
 

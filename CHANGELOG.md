@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PHASE_6_7_DESIGN_AUDIT.md` — Pass 2 audit summary; owner visual sign-off still open.
 
 **Ops**
-- GitHub fork created: `https://github.com/JaxDave1/mflux` — push via `git remote fork` (see runbook).
+- GitHub fork: `https://github.com/JaxDave1/mflux` — branch `codex/workspace-cleanup-snapshot` and tags `neural-interface-v0.2`–`v0.5` pushed (2026-07-12).
 
 ---
 
