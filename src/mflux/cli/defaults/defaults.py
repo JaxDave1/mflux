@@ -25,6 +25,8 @@ MODEL_CHOICES = [
     "dev-fill-catvton",
     "krea-dev",
     "dev-krea",
+    "krea-2",
+    "krea2",
     "qwen",
     "qwen-image",
     "qwen-image-edit",
@@ -38,8 +40,12 @@ MODEL_CHOICES = [
     "seedvr2-7b",
     "flux2-klein-4b",
     "flux2-klein-9b",
+    "flux2-klein-9b-kv",
     "flux2-klein-base-4b",
     "flux2-klein-base-9b",
+    "ernie-image-turbo",
+    "ernie-image",
+    "ideogram4",
 ]
 MODEL_INFERENCE_STEPS = {
     "dev": 25,
@@ -64,10 +70,17 @@ MODEL_INFERENCE_STEPS = {
     "z-image-turbo": 9,
     "seedvr2-3b": 1,
     "seedvr2-7b": 1,
+    "krea-2": 8,
+    "krea2": 8,
+    "ernie-image-turbo": 8,
+    "ernie-image": 50,
     "flux2-klein-4b": 4,
     "flux2-klein-9b": 4,
+    "flux2-klein-9b-kv": 4,
     "flux2-klein-base-4b": 50,
     "flux2-klein-base-9b": 50,
+    "ideogram4": 20,
+    "ideogram-4-fp8": 20,
 }
 QUANTIZE_CHOICES = [3, 5, 4, 6, 8]
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🎨 New Model Support
+
+- **Krea 2**: Add text-to-image support for `krea/Krea-2-Turbo` — a single-stream MMDiT built on the Qwen-Image stack (Qwen-Image VAE + a 12-layer Qwen3-VL-4B text-encoder tap). Includes the `mflux-generate-krea2` CLI (live progress, `--metadata`, stepwise output), `er_sde` and Euler samplers, and `mflux-save` quantization caching.
+
+### ✨ Improvements
+
+- **Atomic `--lora` and `--image` flags**: Pair each path with its value on a single, repeatable flag — `--lora A.safetensors 0.7 --lora B.safetensors` (scale defaults to `1.0`) and `--image photo.jpg 0.6` (strength defaults to the model default). This removes the positional-alignment footgun of the parallel `--lora-paths`/`--lora-scales` and `--image-path`/`--image-strength` lists, which remain fully supported and are marked deprecated in `--help`. (#357)
+
 ---
 
 ## [neural-interface-v0.8] - 2026-07-12
@@ -19,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volatile telemetry/prompt fields stabilized before capture.
 
 **Release housekeeping**
-- Fork `main` fast-forwarded to `codex/workspace-cleanup-snapshot` (Neural Interface now default branch).
+- Fork `main` updated with Neural Interface line merged atop upstream (Krea 2).
 
 See `PHASE_15_V0_8.md`.
 
@@ -169,6 +177,62 @@ See `PHASE_12_V0_5.md`.
 - **API-driven model pickers**: Generation modules and Config default-model dropdowns now load from `/api/models` with per-module allowlists and downloaded-first ordering (`useModuleModelOptions`, `lib/moduleModelOptions.ts`).
 - **v0.1 validation expansion**: `scripts/validation_pass.py` checks the module model registry and runs minimal E2E jobs for each locally cached allowlisted model.
 - **FLUX.2 Klein guidance**: Distilled `flux2-klein-4b` / `flux2-klein-9b` jobs omit `--guidance`; defaults registry updated accordingly.
+
+---
+
+## [0.18.0] - 2026-06-07
+
+### 🎨 New Model Support
+
+- **ERNIE-Image & ERNIE-Image-Turbo**: Port Baidu's ERNIE-Image models with text-to-image CLI entrypoints, LoRA inference and training, and `mflux-save` support.
+- **Ideogram 4 FP8**: Add Ideogram 4 FP8 text-to-image support with JSON caption handling, FP8 safetensors loading, and a dedicated CLI entrypoint.
+
+### ✨ Improvements
+
+- **FLUX.2 Klein 9B KV-cache**: Add KV-cache support for `flux2-klein-9b-kv` with roughly 2.4× speedup on multi-reference edit workloads.
+
+### 🐛 Bug Fixes
+
+- **FLUX.2 Klein Edit guidance**: Allow `--guidance > 1.0` for FLUX.2 Klein edits by checking the resolved FLUX.2 model config instead of requiring a base model name; defaults remain unchanged.
+- **FLUX.2 Klein `mflux-generate`**: Fix `FileNotFoundError: text_encoder_2` by routing Klein models through `Flux2Klein` and skipping the unused T5/`text_encoder_2` weight path.
+- **Memory management**: Evict the text encoder after encoding and clear the MLX cache between seeds on multi-seed runs to prevent OOM on large models such as FLUX.2 Klein 9B.
+
+### 📝 Documentation
+
+- **Related projects**: Add mlx-taef and mlx-teacache to the Related projects list.
+
+### 👩‍💻 Contributors
+
+- **@azrahello**
+- **@c2p-cmd**
+- **@IonDen**
+- **@lpalbou**
+- **@michaeltrefry**
+- **@omercelik**
+- **@plz12345**
+
+---
+
+## [0.17.5] - 2026-04-10
+
+### 🐛 Bug Fixes
+
+- **Qwen Image Edit `mflux-save`**: Route Qwen edit model names to `QwenImageEdit` and save through the same path as inference so VisionTransformer (`encoder.visual`) weights are written. Saving with `QwenImage` previously omitted those weights and led to random vision encoders after reload.
+- **Battery saver callback**: Harden Apple Silicon battery detection when `system_profiler` is missing and resolve the helper script via absolute paths.
+
+### 📝 Documentation
+
+- **Related projects**: Clarify that MindCraft Studio is a macOS app built on mflux.
+
+### 🧰 DX & Maintenance
+
+- **Dependencies**: Relax the `protobuf` upper bound to allow current 7.x releases while keeping a safe ceiling below 8.0.
+
+### 👩‍💻 Contributors
+
+- **@anthonywu**
+- **@f-gibellini**
+- **@JiwaniZakir**
 
 ---
 

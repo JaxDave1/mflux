@@ -16,6 +16,8 @@
 *.safetensors
 *.json
 !src/mflux/models/common/training/_example/train.json
+!src/mflux/models/common/training/_example/train_ernie_image_turbo.json
+!src/mflux/models/common/training/_example/train_ernie_image.json
 !tests/training/config/train.json
 !api/data/config.json
 tests/training/tmp/
