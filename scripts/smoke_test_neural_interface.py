@@ -120,6 +120,16 @@ def main() -> int:
         else:
             record("Txt2Img defaults model", "FAIL", f"unexpected model: {model}")
 
+    for module, expected_model in (("flux2_edit", "flux2-klein-4b"), ("fibo_edit", "fibo-edit")):
+        module_defaults = expect_ok(
+            client.get(f"/api/modules/{module}/defaults"),
+            f"GET /api/modules/{module}/defaults",
+        )
+        if module_defaults and module_defaults.get("model") == expected_model:
+            record(f"{module} defaults model", "PASS", expected_model)
+        elif module_defaults:
+            record(f"{module} defaults model", "FAIL", f"unexpected model: {module_defaults.get('model')}")
+
     unknown_module = client.get("/api/modules/unknown-module/defaults")
     if unknown_module.status_code == 404:
         record("Unknown module defaults 404", "PASS")

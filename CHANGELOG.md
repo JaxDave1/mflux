@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### MFLUX Neural Interface — post-v0.6
+### MFLUX Neural Interface — post-v0.7
+
+_No tracked changes yet._
+
+---
+
+## [neural-interface-v0.7] - 2026-07-12
+
+### MFLUX Neural Interface v0.7
 
 **FIBO Edit (Phase 14)**
 - New job module `fibo_edit` wrapping `mflux-generate-fibo-edit`.
@@ -18,8 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PHASE_6_7_SIGNOFF.md` — owner visual sign-off complete (2026-07-12).
 - `LONG_RUNNING_JOB_UX.md` — ratified companion to `JOBS_API_SPEC.md`.
 - Removed bare `Loading...` copy; added `SurfaceLoadingState` component.
-- Nav rail scroll for 12 modules; deleted orphan `ModulePage.tsx`.
+- Nav rail scroll for dense module list; deleted orphan `ModulePage.tsx`.
 - `scripts/design_signoff.py` — automated DESIGN_LOCK guard checks.
+
+**Validation & ops**
+- `validation_pass.py` — cached-model E2E hooks for `flux2_edit` and `fibo_edit` (SKIP when uncached).
+- `smoke_test_neural_interface.py` — module defaults checks for edit modules.
+- Gallery bulk-delete partial failures list all error messages.
+- `README.md` Neural Interface section.
+
+See `PHASE_14_V0_7.md`.
 
 ---
 
@@ -35,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PNG output policy test coverage for `flux2_edit`.
 
 **Design audit (Phase 6/7)**
-- `PHASE_6_7_DESIGN_AUDIT.md` — Pass 2 audit summary; owner visual sign-off still open.
+- `PHASE_6_7_DESIGN_AUDIT.md` — Pass 2 audit summary (owner sign-off completed in v0.7).
 
 **Ops**
 - GitHub fork: `https://github.com/JaxDave1/mflux` — branch `codex/workspace-cleanup-snapshot` and tags `neural-interface-v0.2`–`v0.5` pushed (2026-07-12).

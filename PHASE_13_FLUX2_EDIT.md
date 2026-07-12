@@ -16,7 +16,7 @@ Expose upstream `mflux-generate-flux2-edit` (`flux2_edit_generate`) as a first-c
 - [x] UI page `/flux2-edit` — primary + optional secondary image, Klein models only
 - [x] Nav rail, JobPanel, Gallery "USE THIS OUTPUT IN"
 - [x] PNG output policy test coverage
-- [ ] Cached-model E2E in `validation_pass.py` (optional when `flux2-klein-4b` cached)
+- [x] Cached-model E2E in `validation_pass.py` (SKIP when `flux2-klein-4b` uncached)
 
 ---
 

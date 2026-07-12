@@ -179,7 +179,12 @@ export function Gallery() {
       const failures = response.failed;
 
       if (!deletedIds.size) {
-        throw new Error(failures[0]?.message ?? "Failed to delete selected outputs");
+        throw new Error(
+          failures
+            .map((failure) => failure.message ?? failure.id)
+            .filter(Boolean)
+            .join(" · ") || "Failed to delete selected outputs"
+        );
       }
 
       let nextFavorites = favoriteIds;
@@ -214,7 +219,12 @@ export function Gallery() {
 
       if (failures.length) {
         setNotice(`Deleted ${deletedIds.size} output(s). ${failures.length} failed.`);
-        setError(failures[0]?.message ?? failures[0]?.id ?? "Delete failed");
+        setError(
+          failures
+            .map((failure) => failure.message ?? failure.id)
+            .filter(Boolean)
+            .join(" · ") || "Delete failed"
+        );
       } else {
         setNotice(
           deletedIds.size === 1 ? "Output deleted from disk." : `Deleted ${deletedIds.size} outputs from disk.`

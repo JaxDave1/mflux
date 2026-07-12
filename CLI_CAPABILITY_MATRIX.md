@@ -62,3 +62,7 @@ Completed in v0.2: CivitAI download, cache delete, quantized export, gallery fav
 **v0.4 (Phase 11):** PNG-only generation outputs; gallery always-on checkboxes + SELECT PAGE bulk delete.
 
 **v0.5 (Phase 12):** Batch `DELETE /api/gallery`, SELECT ALL FILTERED, bulk-delete guardrails, `useStickyState` nav retention. See `PHASE_12_V0_5.md`.
+
+**v0.6 (Phase 13):** FLUX.2 Klein Edit (`flux2_edit`, `/flux2-edit`). See `PHASE_13_V0_6.md`.
+
+**v0.7 (Phase 14):** FIBO Edit (`fibo_edit`, `/fibo-edit`), Phase 6/7 design sign-off, validation hardening. See `PHASE_14_V0_7.md`.

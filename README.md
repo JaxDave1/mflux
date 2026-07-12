@@ -10,6 +10,7 @@ Run the latest state-of-the-art generative image models locally on your Mac in n
 
 ### Table of contents
 
+- [🖥️ Neural Interface](#️-neural-interface)
 - [💡 Philosophy](#-philosophy)
 - [💿 Installation](#-installation)
 - [🎨 Models](#-models)
@@ -17,6 +18,31 @@ Run the latest state-of-the-art generative image models locally on your Mac in n
 - [🌱 Related projects](#related-projects)
 - [🙏 Acknowledgements](#-acknowledgements)
 - [⚖️ License](#%EF%B8%8F-license)
+
+---
+
+### 🖥️ Neural Interface
+
+This fork includes a local **Neural Interface** — a FastAPI backend and React UI for running MFLUX generation jobs, managing models, and browsing outputs.
+
+| Item | Value |
+|---|---|
+| **Start** | `./scripts/dev.sh` from the repo root |
+| **UI** | `http://127.0.0.1:4173/` |
+| **API** | `http://127.0.0.1:8189/` |
+| **Ops guide** | [`NEURAL_INTERFACE_RUNBOOK.md`](NEURAL_INTERFACE_RUNBOOK.md) |
+| **Agent notes** | [`GROK_AGENT_NOTES.md`](GROK_AGENT_NOTES.md) |
+
+Validate after changes:
+
+```bash
+.venv/bin/python scripts/smoke_test_neural_interface.py
+.venv/bin/python scripts/validation_pass.py
+.venv/bin/python scripts/design_signoff.py
+cd ui && npm run build
+```
+
+Latest release line: `neural-interface-v0.7` (see [`CHANGELOG.md`](CHANGELOG.md)).
 
 ---
 

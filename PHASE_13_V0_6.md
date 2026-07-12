@@ -26,7 +26,7 @@
 - [x] UI page `/flux2-edit` — primary + optional secondary image, Klein models only
 - [x] Nav rail, JobPanel, Gallery "USE THIS OUTPUT IN"
 - [x] PNG output policy test coverage (`flux2_edit` in `test_png_output_policy.py`)
-- [ ] Cached-model E2E in `validation_pass.py` (optional when `flux2-klein-4b` cached)
+- [x] Cached-model E2E in `validation_pass.py` (SKIP when `flux2-klein-4b` uncached)
 
 **Files:** `api/services/mflux_cli.py`, `api/services/job_manager.py`, `api/schemas/requests.py`, `ui/src/pages/Flux2Edit.tsx`, `ui/src/lib/moduleModelOptions.ts`
 
@@ -56,6 +56,10 @@ See also `PHASE_13_FLUX2_EDIT.md` (module checklist).
 | `npm run build` | PASS | UI includes `/flux2-edit` |
 | `tests/test_png_output_policy.py` | **11 PASS** | Includes `flux2_edit` |
 | `validation_pass.py` | 32 PASS (baseline) | No new flux2_edit E2E required for tag |
+
+---
+
+**Follow-on:** Phase 14 (`PHASE_14_V0_7.md`) — FIBO Edit, design sign-off hardening; tag `neural-interface-v0.7`.
 
 ---
 

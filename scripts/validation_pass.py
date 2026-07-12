@@ -63,6 +63,8 @@ MODULE_MODEL_ALLOWLISTS: dict[str, list[str]] = {
     "inpaint": ["dev-fill", "dev-fill-catvton"],
     "kontext": ["dev-kontext"],
     "controlnet": ["dev-controlnet-canny", "schnell-controlnet-canny"],
+    "flux2_edit": ["flux2-klein-4b", "flux2-klein-9b", "flux2-klein-base-4b", "flux2-klein-base-9b"],
+    "fibo_edit": ["fibo-edit", "fibo-edit-rmbg"],
 }
 
 RESOURCES = ROOT / "tests" / "resources"
@@ -429,6 +431,8 @@ def _generation_params(model_id: str, *, seed: int, prompt: str) -> dict:
 def _minimal_steps_for_model(model_id: str) -> int:
     if model_id.startswith("flux2-klein"):
         return 4
+    if model_id in {"fibo-edit", "fibo-edit-rmbg"}:
+        return 2
     return 1
 
 
@@ -603,6 +607,62 @@ def validate_cached_module_jobs(client: TestClient) -> None:
             },
             f"Cached controlnet module job ({controlnet_model})",
             timeout_s=1800,
+        )
+
+    edit_source = FIXTURE_IMAGES["img2img"]
+    flux2_edit_model = next(iter(_cached_allowlisted_models(builtins, "flux2_edit")), None)
+    if not flux2_edit_model:
+        record("Cached flux2_edit module job", "SKIP", "no cached flux2_edit allowlist model")
+    elif not edit_source.exists():
+        record("Cached flux2_edit module job", "SKIP", f"missing fixture {edit_source}")
+    else:
+        flux2_edit_params: dict = {
+            "prompt": "validation cached flux2 edit smoke",
+            "model": flux2_edit_model,
+            "imagePaths": [str(edit_source)],
+            "width": 256,
+            "height": 256,
+            "steps": _minimal_steps_for_model(flux2_edit_model),
+            "quantize": 8,
+            "seed": 8806,
+        }
+        guidance = _guidance_for_model(flux2_edit_model)
+        if guidance is not None:
+            flux2_edit_params["guidance"] = guidance
+        _run_module_job(
+            client,
+            "flux2_edit",
+            flux2_edit_params,
+            f"Cached flux2_edit module job ({flux2_edit_model})",
+            timeout_s=1800,
+        )
+
+    fibo_edit_model = next(iter(_cached_allowlisted_models(builtins, "fibo_edit")), None)
+    if not fibo_edit_model:
+        record("Cached fibo_edit module job", "SKIP", "no cached fibo_edit allowlist model")
+    elif not edit_source.exists():
+        record("Cached fibo_edit module job", "SKIP", f"missing fixture {edit_source}")
+    else:
+        fibo_edit_params: dict = {
+            "model": fibo_edit_model,
+            "imagePath": str(edit_source),
+            "width": 256,
+            "height": 256,
+            "steps": _minimal_steps_for_model(fibo_edit_model),
+            "quantize": 8,
+            "seed": 8807,
+        }
+        if fibo_edit_model != "fibo-edit-rmbg":
+            fibo_edit_params["prompt"] = "validation cached fibo edit smoke"
+        guidance = _guidance_for_model(fibo_edit_model, fallback=1.0 if fibo_edit_model == "fibo-edit-rmbg" else 3.5)
+        if guidance is not None:
+            fibo_edit_params["guidance"] = guidance
+        _run_module_job(
+            client,
+            "fibo_edit",
+            fibo_edit_params,
+            f"Cached fibo_edit module job ({fibo_edit_model})",
+            timeout_s=3600,
         )
 
 

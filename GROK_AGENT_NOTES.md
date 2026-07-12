@@ -1,6 +1,6 @@
 # Grok Agent Notes — MFLUX Neural Interface
 
-Living reference for AI agents working on this repo. Updated 2026-07-12 for `neural-interface-v0.6` release.
+Living reference for AI agents working on this repo. Updated 2026-07-12 for `neural-interface-v0.7` release.
 
 ---
 
@@ -10,8 +10,8 @@ Living reference for AI agents working on this repo. Updated 2026-07-12 for `neu
 |---|---|
 | **Repo path** | `/Volumes/AI_HQ/Codex_and_Stitch_MFLUX_UI/mflux/` |
 | **Branch** | `codex/workspace-cleanup-snapshot` |
-| **Latest tag** | `neural-interface-v0.6` |
-| **Latest validated phase** | Phase 13 — FLUX.2 Klein Edit + design audit |
+| **Latest tag** | `neural-interface-v0.7` |
+| **Latest validated phase** | Phase 14 — FIBO Edit + design sign-off + validation hardening |
 | **UI** | `http://127.0.0.1:4173/` |
 | **API** | `http://127.0.0.1:8189/` |
 | **Start** | `./scripts/dev.sh` |
@@ -54,8 +54,12 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 ### v0.6 — `neural-interface-v0.6` (Phase 13)
 - **Klein Edit:** `flux2_edit` job module + `/flux2-edit` UI (primary + optional secondary reference images).
 - **Models:** Klein 4B/9B/base allowlist; PNG output policy; Gallery handoff.
-- **Design audit:** `PHASE_6_7_SIGNOFF.md` — owner visual sign-off complete (2026-07-12).
-- **Ops:** Fork push complete on `JaxDave1/mflux`.
+- **Design audit:** `PHASE_6_7_DESIGN_AUDIT.md` Pass 2 summary.
+
+### v0.7 — `neural-interface-v0.7` (Phase 14)
+- **FIBO Edit:** `fibo_edit` job module + `/fibo-edit` UI (mask, RMBG matte export).
+- **Design sign-off:** `PHASE_6_7_SIGNOFF.md`, `LONG_RUNNING_JOB_UX.md`, `SurfaceLoadingState`, `design_signoff.py`.
+- **Validation:** edit-module E2E hooks in `validation_pass.py`; gallery partial-delete error listing; README section.
 
 ---
 
@@ -70,26 +74,28 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 | Gallery UI | `ui/src/pages/Gallery.tsx`, `ui/src/components/ImageGrid.tsx` |
 | Gallery selection helpers | `ui/src/lib/gallerySelection.ts` |
 | Config UI | `ui/src/pages/Config.tsx` |
-| Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
+| Validation | `scripts/validation_pass.py`, `scripts/v0_2_signoff.py`, `scripts/smoke_test_neural_interface.py`, `scripts/design_signoff.py`, `scripts/gallery_bulk_delete_browser_smoke.mjs` |
 | Ops | `NEURAL_INTERFACE_RUNBOOK.md` |
 | Klein Edit | `ui/src/pages/Flux2Edit.tsx`, `api/services/mflux_cli.py` (`_flux2_edit_command`) |
 | FIBO Edit | `ui/src/pages/FiboEdit.tsx`, `api/services/mflux_cli.py` (`_fibo_edit_command`) |
-| Phase orders | `PHASE_8_V0_2.md` … `PHASE_13_V0_6.md` |
+| Phase orders | `PHASE_8_V0_2.md` … `PHASE_14_V0_7.md` |
 
 ---
 
-## 4. Validation state (2026-06-30)
+## 4. Validation state (2026-07-12)
 
 | Suite | Result | Artifact |
 |---|---|---|
-| `validation_pass.py` | 32 / 0 / 0 | `scripts/validation_pass_results.json` |
-| `v0_2_signoff.py` | 15 / 0 / 0 | `scripts/v0_2_signoff_results.json` |
-| `smoke_test_neural_interface.py` | 34 / 0 / 0 | `scripts/smoke_test_results.json` |
-| `gallery_bulk_delete_browser_smoke.mjs` | PASS | Browser smoke: filtered 2 synthetic outputs, SELECT ALL FILTERED, hidden tile delete controls, confirmed delete, files removed |
-| `navigation_state_browser_smoke.mjs` | PASS | Browser smoke: Txt2Img prompt and Gallery search survived client-side route changes |
-| `npm run build` | PASS | post-v0.4 navigation state hardening |
-| `.venv/bin/python -m pytest -q -m fast` | 434 PASS / 79 deselected | Includes PNG output policy and Gallery batch delete coverage |
-| `npm run test:unit` | 6 PASS | Gallery selection helper coverage, including filtered selection |
+| `design_signoff.py` | 6 PASS | DESIGN_LOCK guards |
+| `validation_pass.py` | 32 PASS / 2 SKIP | `scripts/validation_pass_results.json` |
+| `v0_2_signoff.py` | 15 PASS | `scripts/v0_2_signoff_results.json` |
+| `smoke_test_neural_interface.py` | 38 PASS | `scripts/smoke_test_results.json` |
+| `gallery_bulk_delete_browser_smoke.mjs` | PASS | filtered bulk delete E2E |
+| `navigation_state_browser_smoke.mjs` | PASS | sticky state across routes |
+| `npm run build` | PASS | 13 nav modules |
+| `npm run test:unit` | 6 PASS | gallery selection helpers |
+
+**Edit E2E:** `flux2_edit` / `fibo_edit` jobs run in `validation_pass.py` when models are cached; otherwise SKIP (not a failure).
 
 **Sign-off side effect:** `v0_2_signoff.py` deletes HF cache for `z-image-turbo` and `flux2-klein-4b`. Re-download from Models if cards show NOT CACHED.
 
@@ -97,7 +103,7 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 5. Git state (2026-07-12)
 
-**Branch:** `codex/workspace-cleanup-snapshot` · **HEAD:** `0c4e3d8` · **Tags on fork:** `neural-interface-v0.2`–`v0.6` (pushed 2026-07-12)
+**Branch:** `codex/workspace-cleanup-snapshot` · **Tag:** `neural-interface-v0.7`
 
 **Fork (pushed):** [github.com/JaxDave1/mflux](https://github.com/JaxDave1/mflux) — `git remote fork`
 
@@ -117,20 +123,15 @@ This fork layers a **Neural Interface** (FastAPI + React/Vite) on upstream MFLUX
 
 ## 7. Recommendations
 
-### High priority
-
-1. **Tag v0.7?** — FIBO Edit (Phase 14) + design sign-off in `[Unreleased]`; tag after push.
-
 ### Medium priority
 
-2. **README neural interface section** — Upstream `README.md` has no Neural Interface pointer; add short section linking to runbook.
-3. **Screenshot regression set** — Manual capture for Dashboard + one generation module (P2 from sign-off).
+1. **Screenshot regression set** — Manual capture for Dashboard + one generation module (P2 from sign-off).
 
-### Low priority / corrections
+### Low priority
 
-3. **`flux2-klein-4b` txt2img E2E** — Latest validation registry shows 4 txt2img models (klein may be uncached after sign-off cache delete); document or restore cache before full 5-model run.
-4. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
-5. **Bulk delete failure UX** — Partial failures show the first error message only; consider listing all failed paths.
+2. **`flux2-klein-4b` / `fibo-edit` cache** — Re-download for live edit E2E when validation shows SKIP.
+3. **CivitAI token** — Stored in vault (`civitai` key); never log or commit.
+4. **`quality` config field** — Legacy PNG-only path; schema retains field for compat, unused in generation.
 
 ---
 
@@ -158,8 +159,8 @@ git push fork codex/workspace-cleanup-snapshot --tags
 - `NEURAL_INTERFACE_RUNBOOK.md` — start, validate, env vars, troubleshooting
 - `CHANGELOG.md` — release history
 - `CLI_CAPABILITY_MATRIX.md` — API/UI capability status
-- `AGENTS.md` — pointer to Cursor rules + this file
-- `PHASE_13_V0_6.md` — latest completed phase spec
+- `README.md` — Neural Interface quick start
+- `PHASE_14_V0_7.md` — latest completed phase spec
 - `PHASE_6_7_SIGNOFF.md` — design owner sign-off
 - `LONG_RUNNING_JOB_UX.md` — job UX contract
 
